@@ -1,0 +1,40 @@
+modLoader = "javafml"
+loaderVersion = "[46,)"
+license = "MIT"
+
+[[mods]]
+modId = "net_music_can_play_bili"
+version = "${mod_version}"
+displayName = "Net Music Can Play Bili"
+authors = "zhongbai233"
+description = '''
+Adds Bilibili video audio playback support to NetMusic. Paste a Bilibili video link (BV/av) into a music CD and it will play the audio directly.
+'''
+
+[[dependencies.net_music_can_play_bili]]
+modId = "forge"
+mandatory = true
+versionRange = "[46,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.net_music_can_play_bili]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20,1.20.2)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.net_music_can_play_bili]]
+modId = "netmusic"
+mandatory = true
+versionRange = "[1.5.2,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.net_music_can_play_bili]]
+modId = "iris"
+mandatory = false
+versionRange = "[1.6,)"
+ordering = "AFTER"
+side = "CLIENT"
