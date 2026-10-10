@@ -30,7 +30,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.common.NeoForge;
 import org.slf4j.Logger;
 
 import com.zhongbai233.net_music_can_play_bili.util.MathCompat;

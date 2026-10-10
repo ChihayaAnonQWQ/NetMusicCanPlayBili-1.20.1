@@ -13,7 +13,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -214,24 +213,31 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
         stack.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(tag));
     }
 
+    /**
+     * 方块右键交互。
+     *
+     * <p><b>1.20.1 移植说明</b>：1.20.5+ 拆成 {@code useItemOn} 与 {@code useWithoutItem} 两个入口
+     * （后者在前者返回 {@code PASS_TO_DEFAULT_BLOCK_INTERACTION} 时被原版调用），
+     * 而 1.20.1 只有 {@code use(...)} 一个入口。故合并：原来返回
+     * {@code PASS_TO_DEFAULT_BLOCK_INTERACTION} 的两条分支，直接展开为原
+     * {@code useWithoutItem} 的行为。</p>
+     */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+    protected InteractionResult use(BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hitResult) {
-        if (hand == InteractionHand.MAIN_HAND && stack.getItem() instanceof MediaManagementToolItem) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-        if (!player.mayBuild()) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        ItemStack stack = player.getItemInHand(hand);
+        if ((hand == InteractionHand.MAIN_HAND && stack.getItem() instanceof MediaManagementToolItem)
+                || !player.mayBuild()) {
+            return openScreenOrPass(level, pos, player);
         }
         if (level.isClientSide()) {
             openClientScreen(pos);
         }
-        return ItemInteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-            BlockHitResult hitResult) {
+    /** 原 1.21.1 {@code useWithoutItem} 的等价实现：不能建造则 PASS，否则（客户端）打开界面。 */
+    private static InteractionResult openScreenOrPass(Level level, BlockPos pos, Player player) {
         if (!player.mayBuild()) {
             return InteractionResult.PASS;
         }

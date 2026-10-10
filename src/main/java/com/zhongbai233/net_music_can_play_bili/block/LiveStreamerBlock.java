@@ -14,7 +14,6 @@ import net.minecraft.server.level.ServerLevel;
 import com.zhongbai233.net_music_can_play_bili.link.AudioLinkIndex;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -70,58 +69,66 @@ public class LiveStreamerBlock extends HorizontalDirectionalBlock implements Ent
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
+    /**
+     * 方块右键交互。
+     *
+     * <p><b>1.20.1 移植说明</b>：1.21.1（1.20.5+）的方块交互被拆成
+     * {@code useItemOn(ItemStack, ...) -> ItemInteractionResult} 与
+     * {@code useWithoutItem(...) -> InteractionResult} 两个入口；1.20.1 <b>只有</b>
+     * {@code use(BlockState, Level, BlockPos, Player, InteractionHand, BlockHitResult) -> InteractionResult}
+     * 一个入口。故这里把两个方法合并：原 {@code useItemOn} 里返回
+     * {@code PASS_TO_DEFAULT_BLOCK_INTERACTION}（即"交给 useWithoutItem"）的分支，
+     * 直接展开为原 {@code useWithoutItem} 的行为。</p>
+     * <p>本方块两条路都归结为「打开直播机界面」，故合并后只有一个出口。</p>
+     */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+    protected InteractionResult use(BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hitResult) {
+        ItemStack stack = player.getItemInHand(hand);
         if (hand == InteractionHand.OFF_HAND) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            // 原 useItemOn 对副手返回 PASS_TO_DEFAULT → 原版随后调用 useWithoutItem。
+            if (level.isClientSide()) {
+                LiveStreamerClientHooks.openLiveStreamerScreen(pos);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         // 手持链接物品右键 → 存储连接目标到物品 NBT，与现代化唱片机一致
         if (stack.getItem() == ModItems.SPEAKER.get()) {
             if (level.isClientSide()) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
             LinkHelper.writeLinkToItem(stack, pos);
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.speaker.item_linked",
                     pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.GOLD));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (stack.getItem() == ModItems.VIDEO_PROJECTOR.get()) {
             if (level.isClientSide()) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
             LinkHelper.writeLinkToItem(stack, pos);
             VideoProjectorBlock.writeLinkedBlockEntityData(stack, pos);
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.video_projector.item_linked",
                     pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.GOLD));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (stack.getItem() == ModItems.CONTROL_CONSOLE.get()) {
             if (level.isClientSide()) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
                 LinkHelper.writeControlConsoleLinkToItem(stack, pos, level.dimension().location().toString(),
                     LinkHelper.ControlConsoleSourceKind.LIVE_STREAMER);
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.control_console.item_linked",
                     pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.GOLD));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (level.isClientSide()) {
             LiveStreamerClientHooks.openLiveStreamerScreen(pos);
         }
-        return ItemInteractionResult.sidedSuccess(level.isClientSide());
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-            BlockHitResult hitResult) {
-        if (level.isClientSide()) {
-            LiveStreamerClientHooks.openLiveStreamerScreen(pos);
-        }
-        return InteractionResult.SUCCESS;
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     @Override

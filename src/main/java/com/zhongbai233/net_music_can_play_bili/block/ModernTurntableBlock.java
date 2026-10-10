@@ -15,7 +15,6 @@ import net.minecraft.server.level.ServerLevel;
 import com.zhongbai233.net_music_can_play_bili.link.AudioLinkIndex;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -77,80 +76,94 @@ public class ModernTurntableBlock extends HorizontalDirectionalBlock implements 
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
+    /**
+     * 方块右键交互。
+     *
+     * <p><b>1.20.1 移植说明</b>：1.20.5+ 把方块交互拆成
+     * {@code useItemOn(ItemStack, ...) -> ItemInteractionResult} 与
+     * {@code useWithoutItem(...) -> InteractionResult} 两个入口（后者在前者返回
+     * {@code PASS_TO_DEFAULT_BLOCK_INTERACTION} 时被原版调用）；
+     * <b>1.20.1 只有 {@code use(...)} 一个入口</b>。故这里把两者合并，
+     * 凡原来返回 {@code PASS_TO_DEFAULT_BLOCK_INTERACTION} 的分支，直接展开为原
+     * {@code useWithoutItem} 的行为。</p>
+     */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+    protected InteractionResult use(BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hitResult) {
+        ItemStack stack = player.getItemInHand(hand);
         if (hand == InteractionHand.OFF_HAND) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return shiftOpenScreenOrPass(level, pos, player);
         }
         if (player.isShiftKeyDown()) {
             if (level.isClientSide()) {
                 openClientScreen(pos);
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         // 手持链接物品右键 → 存储连接目标到物品 NBT
         if (stack.getItem() == com.zhongbai233.net_music_can_play_bili.init.ModItems.LYRIC_PROJECTOR.get()) {
             if (level.isClientSide()) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
             LinkHelper.writeLinkToItem(stack, pos);
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.lyric_projector.item_linked",
                     pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.GOLD));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (stack.getItem() == com.zhongbai233.net_music_can_play_bili.init.ModItems.VIDEO_PROJECTOR.get()) {
             if (level.isClientSide()) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
             LinkHelper.writeLinkToItem(stack, pos);
             VideoProjectorBlock.writeLinkedBlockEntityData(stack, pos);
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.video_projector.item_linked",
                     pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.GOLD));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (stack.getItem() == com.zhongbai233.net_music_can_play_bili.init.ModItems.SPEAKER.get()) {
             if (level.isClientSide()) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
             LinkHelper.writeLinkToItem(stack, pos);
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.speaker.item_linked",
                     pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.GOLD));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (stack.getItem() == com.zhongbai233.net_music_can_play_bili.init.ModItems.CONTROL_CONSOLE.get()) {
             if (level.isClientSide()) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
                 LinkHelper.writeControlConsoleLinkToItem(stack, pos, level.dimension().location().toString(),
                     LinkHelper.ControlConsoleSourceKind.TURNTABLE);
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.control_console.item_linked",
                     pos.getX(), pos.getY(), pos.getZ()).withStyle(ChatFormatting.GOLD));
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (level.isClientSide()) {
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (!(level.getBlockEntity(pos) instanceof ModernTurntableBlockEntity turntable)
                 || !(player instanceof ServerPlayer serverPlayer)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            // 1.21.1 这里返回 PASS_TO_DEFAULT_BLOCK_INTERACTION → 原版接着调用 useWithoutItem。
+            // 但能走到这里说明玩家未潜行，而 useWithoutItem 在未潜行时正是 PASS，故等价。
+            return InteractionResult.PASS;
         }
 
         if (turntable.hasDisc()) {
             ejectDisc(level, pos, turntable);
-            return ItemInteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
         ItemMusicCD.SongInfo songInfo = ItemMusicCD.getSongInfo(stack);
         if (songInfo == null) {
             player.sendSystemMessage(Component.translatable(
                     "message.net_music_can_play_bili.modern_turntable.need_cd").withStyle(ChatFormatting.RED));
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
 
         turntable.setDisc(stack.copyWithCount(1));
@@ -159,16 +172,18 @@ public class ModernTurntableBlock extends HorizontalDirectionalBlock implements 
         }
         updateState(level, pos, turntable);
         turntable.startFromDisc(serverPlayer);
-        return ItemInteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-            BlockHitResult hitResult) {
+    /**
+     * 原 1.21.1 {@code useWithoutItem} 的等价实现：潜行时打开界面并返回 SUCCESS，否则 PASS。
+     *
+     * <p>1.20.1 没有 {@code useWithoutItem}，它只会在 {@code use} 里被就地展开。</p>
+     */
+    private static InteractionResult shiftOpenScreenOrPass(Level level, BlockPos pos, Player player) {
         if (player.isShiftKeyDown()) {
             if (level.isClientSide()) {
                 openClientScreen(pos);
-                return InteractionResult.SUCCESS;
             }
             return InteractionResult.SUCCESS;
         }
