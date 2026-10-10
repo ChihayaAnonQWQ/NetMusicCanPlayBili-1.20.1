@@ -101,37 +101,20 @@ public final class ControlConsoleBlock extends Block implements EntityBlock {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
             InteractionHand hand, BlockHitResult hitResult) {
-        // [中控台探针] 定位"右键打不开"用；定位完成后删除（搜索 "[中控台探针]" 即可全部找到）。
-        var probeBe = level.getBlockEntity(pos);
-        com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
-                "[中控台探针] use() 进入 side={} pos={} hand={} mayBuild={} 方块实体={}",
-                level.isClientSide() ? "client" : "server", pos, hand, player.mayBuild(),
-                probeBe == null ? "null" : probeBe.getClass().getName());
         if (!player.mayBuild()
                 && !player.createCommandSourceStack().hasPermission(2)) {
-            com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
-                    "[中控台探针] 被 mayBuild()/权限 拦下（mayBuild={}）", player.mayBuild());
             return InteractionResult.FAIL;
         }
         if (!(level.getBlockEntity(pos) instanceof ControlConsoleBlockEntity console)) {
-            com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
-                    "[中控台探针] 被方块实体类型检查拦下（实际类型见上一条日志）");
             return InteractionResult.FAIL;
         }
         if (!level.isClientSide()) {
             if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                 console.claimIfUnowned(serverPlayer.getUUID());
-                boolean canEdit = console.canEdit(serverPlayer);
-                com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
-                        "[中控台探针] 服务端分支 canEdit={} → 返回 {}", canEdit, canEdit ? "SUCCESS" : "FAIL");
-                return canEdit ? InteractionResult.SUCCESS : InteractionResult.FAIL;
+                return console.canEdit(serverPlayer) ? InteractionResult.SUCCESS : InteractionResult.FAIL;
             }
-            com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
-                    "[中控台探针] 服务端分支但不是 ServerPlayer → 返回 FAIL");
             return InteractionResult.FAIL;
         }
-        com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
-                "[中控台探针] 客户端分支 → 调用 ControlConsoleClient.openScreen");
         com.zhongbai233.net_music_can_play_bili.client.ControlConsoleClient.openScreen(pos);
         return InteractionResult.SUCCESS;
     }
