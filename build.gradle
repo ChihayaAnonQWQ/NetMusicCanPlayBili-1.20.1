@@ -148,8 +148,12 @@ tasks.withType(JavaCompile).configureEach {
     // 该文件落在 build/tmp/compileJava/ 下，已被下方 jar 块的 from(...) 收录。
     def mixinTsrg = file("${buildDir}/createMcpToSrg/output.tsrg")
     dependsOn tasks.matching { it.name == 'createMcpToSrg' }
+    // 输出目录刻意选「注解处理器的标准输出目录」（Gradle 保证它存在，
+    // 且下方 jar 块已收录该目录）。踩过的坑：原先把文件写到 build/tmp/compileJava/，
+    // 增量编译时能生成，但 clean build（目录刚被删、由 Gradle 稍后才创建）时
+    // 处理器写文件会失败且**静默**——表现为"编译成功、jar 里却没有 refmap"。
     options.compilerArgs += [
-            '-AoutRefMapFile=' + file("${buildDir}/tmp/compileJava/mixin.refmap.json").absolutePath,
+            '-AoutRefMapFile=' + file("${buildDir}/generated/sources/annotationProcessor/java/main/mixin.refmap.json").absolutePath,
             '-AdefaultObfuscationEnv=searge',
             '-AmappingTypes=tsrg',
             '-AreobfTsrgFile=' + mixinTsrg.absolutePath
@@ -207,4 +211,21 @@ jar {
     from("${projectDir}/build/tmp/compileJava") { include '*.refmap.json' }
     from("${projectDir}/build/classes/java/main") { include '*.refmap.json' }
     from("${projectDir}/build/generated/sources/annotationProcessor/java/main") { include '*.refmap.json' }
+
+    // ★ 守卫：没有 refmap 就不要产出 jar ★
+    // 理由：Forge 1.20.1 生产运行时是 SRG 名，注入/访问 MC 类成员的 mixin 全靠 refmap；
+    // 缺了它**编译依然成功**，只是实机上 mixin 失效或崩溃——这种「静默失败」必须挡住。
+    doFirst {
+        def candidates = [
+                file("${buildDir}/generated/sources/annotationProcessor/java/main/mixin.refmap.json"),
+                file("${buildDir}/tmp/compileJava/mixin.refmap.json"),
+                file("${buildDir}/classes/java/main/mixin.refmap.json")
+        ]
+        if (!candidates.any { it.exists() }) {
+            throw new GradleException(
+                    "mixin refmap 缺失，候选路径都不存在：" + candidates*.path.join("、") +
+                    "\n这会让注入 MC 类的 mixin 在生产环境失效（缺 refmap 时官方名无法映射到 SRG 名）。" +
+                    "\n请检查 build.gradle 的 -AoutRefMapFile/-AmappingTypes/-AreobfTsrgFile 与 mixin 注解处理器配置。")
+        }
+    }
 }
