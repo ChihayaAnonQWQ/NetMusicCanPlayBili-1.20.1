@@ -211,7 +211,8 @@ public class HolographicGlassesItem extends Item implements Equipable {
     public static ScreenConfig readScreenConfig(ItemStack stack) {
         List<ScreenBinding> bindings = readScreenBindings(stack);
         if (!bindings.isEmpty()) {
-            return bindings.getFirst().config();
+            // 1.20.1 没有 List#getFirst（Java 21 的 SequencedCollection）。
+            return bindings.get(0).config();
         }
         return defaultScreenConfig();
     }
@@ -319,7 +320,7 @@ public class HolographicGlassesItem extends Item implements Equipable {
                 .withStyle(ChatFormatting.GRAY));
         List<ScreenBinding> bindings = readScreenBindings(stack);
         if (!bindings.isEmpty()) {
-            MediaSource source = bindings.getFirst().source();
+            MediaSource source = bindings.get(0).source();
             if (source != null) {
                 tooltipComponents.add(Component.translatable("tooltip.net_music_can_play_bili.holographic_glasses.media",
                         source.shortName()).withStyle(ChatFormatting.GRAY));

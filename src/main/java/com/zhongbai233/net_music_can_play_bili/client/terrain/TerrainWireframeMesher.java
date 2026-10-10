@@ -51,10 +51,11 @@ public final class TerrainWireframeMesher {
             List<Interval> values = intervals.get(line);
             values.sort(Comparator.comparingInt((Interval interval) -> interval.start())
                     .thenComparingInt(interval -> interval.end()));
-            int start = values.getFirst().start();
-            int end = values.getFirst().end();
+            // 1.20.1 没有 List#getFirst（Java 21 的 SequencedCollection）。
+            int start = values.get(0).start();
+            int end = values.get(0).end();
             LineAccumulator accumulator = new LineAccumulator();
-            accumulator.add(values.getFirst());
+            accumulator.add(values.get(0));
             for (int index = 1; index < values.size(); index++) {
                 Interval interval = values.get(index);
                 if (interval.start() <= end) {

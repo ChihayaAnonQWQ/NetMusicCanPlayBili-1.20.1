@@ -11,8 +11,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.client.event.ClientPauseChangeEvent;
-import net.minecraftforge.client.event.RenderFrameEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
@@ -64,8 +62,18 @@ public final class ClientMediaLifecycleHandler {
         }
     }
 
+    /**
+     * 每帧一次（渲染线程、渲染之前）的钩子。
+     *
+     * <p>1.20.1 移植说明：{@code RenderFrameEvent.Pre} 在 Forge 1.20.1 没有对应物；
+     * 语义最近的是 {@link TickEvent.RenderTickEvent} 的 START 阶段（每帧一次、渲染之前、
+     * 客户端渲染线程）。</p>
+     */
     @SubscribeEvent
-    public static void onRenderFrame(RenderFrameEvent.Pre event) {
+    public static void onRenderFrame(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) {
+            return;
+        }
         com.zhongbai233.net_music_can_play_bili.client.renderer.ControlConsoleRenderer.updateConsumerFades();
         com.zhongbai233.net_music_can_play_bili.client.renderer.item.MP4ItemScreenRenderer
                 .renderHeldOffscreenGuiFrameStart();
@@ -81,9 +89,26 @@ public final class ClientMediaLifecycleHandler {
         }
     }
 
+    /** 上一次观察到的暂停状态，见 {@link #onClientTickPauseWatch}。 */
+    private static boolean lastPausedState;
+
+    /**
+     * 暂停状态变化的等价实现。
+     *
+     * <p>1.20.1 移植说明：NeoForge 的 {@code ClientPauseChangeEvent.Post} 在 Forge 1.20.1
+     * <b>没有对应物</b>。这里在客户端 tick 里比较 {@link Minecraft#isPaused()} 的跳变，
+     * 语义与原事件一致：只在状态真正变化时通知一次（不会每 tick 重复调用）。</p>
+     */
     @SubscribeEvent
-    public static void onClientPauseChanged(ClientPauseChangeEvent.Post event) {
-        ClientAudioOutputRegistry.setPaused(event.isPaused());
+    public static void onClientTickPauseWatch(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        boolean paused = Minecraft.getInstance().isPaused();
+        if (paused != lastPausedState) {
+            lastPausedState = paused;
+            ClientAudioOutputRegistry.setPaused(paused);
+        }
     }
 
     @SubscribeEvent

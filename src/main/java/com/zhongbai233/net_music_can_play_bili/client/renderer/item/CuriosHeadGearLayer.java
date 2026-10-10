@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.CustomHeadLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -37,8 +36,10 @@ public final class CuriosHeadGearLayer extends RenderLayer<AbstractClientPlayer,
     }
 
     public static void register(EntityRenderersEvent.AddLayers event) {
-        Set<PlayerSkin.Model> skins = event.getSkins();
-        for (PlayerSkin.Model skin : skins) {
+        // 1.20.1 没有 PlayerSkin.Model（1.20.2+ 才引入）；Forge 的 AddLayers#getSkins()
+        // 返回的就是皮肤名字符串集合（"default"/"slim"）。
+        Set<String> skins = event.getSkins();
+        for (String skin : skins) {
             EntityRenderer<? extends Player> renderer = event.getSkin(skin);
             if (renderer instanceof PlayerRenderer playerRenderer) {
                 playerRenderer.addLayer(new CuriosHeadGearLayer(playerRenderer));

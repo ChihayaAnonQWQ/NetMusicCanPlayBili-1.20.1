@@ -6,7 +6,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.zhongbai233.net_music_can_play_bili.media.audio.IndexedAudioEndpoint;
 import com.zhongbai233.net_music_can_play_bili.media.sync.PlaybackSourceId;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerLevel;
@@ -38,10 +37,6 @@ public final class AudioPlaybackIndexSavedData extends SavedData {
             ENDPOINTS_CODEC.optionalFieldOf("endpoints", Map.of()).forGetter(data -> data.endpoints))
             .apply(instance, AudioPlaybackIndexSavedData::new));
 
-    public static final SavedData.Factory<AudioPlaybackIndexSavedData> FACTORY = new SavedData.Factory<>(
-            AudioPlaybackIndexSavedData::new,
-            AudioPlaybackIndexSavedData::load);
-
     private final Map<Long, SourceEntry> sources;
     private final Map<UUID, EndpointEntry> endpoints;
 
@@ -54,12 +49,21 @@ public final class AudioPlaybackIndexSavedData extends SavedData {
         this.endpoints = new HashMap<>(endpoints);
     }
 
+    /**
+     * 取得（或创建）本维度的索引数据。
+     *
+     * <p>1.20.1 移植说明：{@code SavedData.Factory}（1.21 新增）在 1.20.1 <b>不存在</b>；
+     * 1.20.1 的 {@code DimensionDataStorage#computeIfAbsent} 直接接收
+     * 「读取函数 + 构造器 + 名称」三个参数。</p>
+     */
     public static AudioPlaybackIndexSavedData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(FACTORY, NAME);
+        return level.getDataStorage().computeIfAbsent(AudioPlaybackIndexSavedData::load,
+                AudioPlaybackIndexSavedData::new, NAME);
     }
 
+    /** 1.20.1 的 {@code SavedData#save} 只有一个参数（没有 {@code HolderLookup.Provider}）。 */
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         CODEC.encodeStart(NbtOps.INSTANCE, this)
                 .resultOrPartial(error -> LOGGER.error("Failed to save audio playback index: {}", error))
                 .ifPresent(encoded -> {
@@ -70,7 +74,7 @@ public final class AudioPlaybackIndexSavedData extends SavedData {
         return tag;
     }
 
-    private static AudioPlaybackIndexSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
+    private static AudioPlaybackIndexSavedData load(CompoundTag tag) {
         return CODEC.parse(NbtOps.INSTANCE, tag)
                 .resultOrPartial(error -> LOGGER.warn("Failed to load audio playback index: {}", error))
                 .orElseGet(AudioPlaybackIndexSavedData::new);

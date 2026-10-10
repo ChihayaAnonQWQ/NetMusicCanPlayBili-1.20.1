@@ -24,7 +24,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.client.event.RenderFrameEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -536,8 +536,20 @@ public final class VideoBillboardPreview extends VideoBillboardSessionSupport {
         return true;
     }
 
+    /**
+     * 每帧一次（渲染线程）的钩子。
+     *
+     * <p>1.20.1 移植说明：{@code RenderFrameEvent.Pre} 在 Forge 1.20.1 没有对应物。
+     * 这里用 {@link TickEvent.RenderTickEvent} 的 START 阶段：每帧一次、渲染之前、
+     * 客户端渲染线程 —— 与原来一样，且本方法依赖的
+     * {@code YuvVideoRenderTypes#warmupYuvShaders()} / {@code pumpUploadOnRenderThread()}
+     * 都要求渲染线程。</p>
+     */
     @SubscribeEvent
-    public static void onRenderFrame(RenderFrameEvent.Pre event) {
+    public static void onRenderFrame(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) {
+            return;
+        }
         beginBerVisibilityFrame();
         PROJECTOR_IMMEDIATE_POSES.clear();
         Minecraft minecraft = Minecraft.getInstance();

@@ -226,7 +226,8 @@ public final class TerrainPreviewSectionCompiler {
             }
         }
         BufferBuilder output = builderFor(layer, storageByLayer, buildersByLayer);
-        int tint = block.tintLayers().isEmpty() ? -1 : block.tintLayers().getFirst();
+        // 1.20.1 没有 List#getFirst（Java 21 的 SequencedCollection）。
+        int tint = block.tintLayers().isEmpty() ? -1 : block.tintLayers().get(0);
         if (tint != -1 && (tint & 0xFF000000) == 0) {
             tint |= 0xFF000000;
         }

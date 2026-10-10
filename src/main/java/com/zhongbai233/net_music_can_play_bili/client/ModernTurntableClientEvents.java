@@ -20,15 +20,16 @@ import com.zhongbai233.net_music_can_play_bili.init.ModBlockEntities;
 import com.zhongbai233.net_music_can_play_bili.init.ModBlocks;
 import com.zhongbai233.net_music_can_play_bili.init.ModMenus;
 import com.zhongbai233.net_music_can_play_bili.port.shim.PortPictureInPictureRenderer;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterMenuScreensEvent;
-import net.minecraftforge.client.event.RenderFrameEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.common.NeoForge;
 import org.slf4j.Logger;
 
@@ -63,11 +64,29 @@ public final class ModernTurntableClientEvents {
         MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onClone);
     }
 
-    private static void onRenderFrame(RenderFrameEvent.Pre event) {
+    /** 上一帧的纳秒时间戳，用于自行换算帧间隔（见 {@link #onRenderFrame}）。 */
+    private static long lastFrameNanos;
+
+    /**
+     * 每帧一次（渲染线程、渲染之前）的钩子。
+     *
+     * <p>1.20.1 移植说明：1.21.1/NeoForge 的 {@code RenderFrameEvent.Pre} 在 Forge 1.20.1
+     * <b>没有对应物</b>。语义最近的是 {@link TickEvent.RenderTickEvent} 的 START 阶段：
+     * 它同样每帧触发一次、发生在渲染之前、且运行在客户端（渲染）线程上。</p>
+     *
+     * <p>原实现用 {@code DeltaTracker#getRealtimeDeltaTicks()}（距上一帧的真实耗时，以 tick 计）；
+     * 1.20.1 没有 DeltaTracker，这里改用 {@link Util#getNanos()} 自行换算成秒，
+     * 与原语义等价（真实帧间隔、单位秒、上限 0.1s）。</p>
+     */
+    private static void onRenderFrame(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) {
+            return;
+        }
         if (Minecraft.getInstance().screen instanceof HolographicScreenConfigTestScreen screen) {
-            double deltaSeconds = MathCompat.clamp(event.getPartialTick().getRealtimeDeltaTicks() / 20.0D,
-                    0.0D, 0.1D);
-            screen.advanceCameraFrame(deltaSeconds);
+            long now = Util.getNanos();
+            double deltaSeconds = lastFrameNanos == 0L ? 0.0D : (now - lastFrameNanos) / 1.0E9D;
+            lastFrameNanos = now;
+            screen.advanceCameraFrame(MathCompat.clamp(deltaSeconds, 0.0D, 0.1D));
         }
     }
 
@@ -75,9 +94,19 @@ public final class ModernTurntableClientEvents {
         HolographicPrivacyOverlay.release();
     }
 
-    private static void registerMenuScreens(RegisterMenuScreensEvent event) {
-        event.register(ModMenus.MEDIA_TOOL_BINDING.get(), MediaToolBindingScreen::new);
-        event.register(ModMenus.MEDIA_TOOL_REPORT.get(), MediaToolReportScreen::new);
+    /**
+     * 菜单 → 界面 的绑定。
+     *
+     * <p>1.20.1 移植说明：NeoForge 的 {@code RegisterMenuScreensEvent} 在 Forge 1.20.1
+     * <b>没有对应物</b>（1.20.1 既没有 {@code MenuScreensEvent} 也没有该事件类）。
+     * 1.20.1 的标准做法是在 {@link FMLClientSetupEvent} 里用
+     * {@link MenuScreens#register} 手动绑定 —— 这也是 Forge 官方 MDK 的写法。</p>
+     */
+    private static void registerMenuScreens(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            MenuScreens.register(ModMenus.MEDIA_TOOL_BINDING.get(), MediaToolBindingScreen::new);
+            MenuScreens.register(ModMenus.MEDIA_TOOL_REPORT.get(), MediaToolReportScreen::new);
+        });
     }
 
     /**

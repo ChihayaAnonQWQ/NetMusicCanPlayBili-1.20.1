@@ -49,7 +49,9 @@ public final class EditorSession<E extends SceneElement> implements AutoCloseabl
         this.document = Objects.requireNonNull(document, "document");
         selectedElementIds.removeIf(id -> document.element(id).isEmpty());
         if (primaryElementId != null && !selectedElementIds.contains(primaryElementId)) {
-            primaryElementId = selectedElementIds.isEmpty() ? null : selectedElementIds.getLast();
+            // 1.20.1 没有 SequencedCollection#getLast（Java 21）；LinkedHashSet 的迭代顺序即插入顺序，
+            // 用 reduce 取最后一个等价于原语义。
+            primaryElementId = selectedElementIds.stream().reduce((first, second) -> second).orElse(null);
         }
     }
 
