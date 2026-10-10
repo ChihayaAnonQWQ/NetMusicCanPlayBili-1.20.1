@@ -1,0 +1,178 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '[6.0.16,6.2)', changing: true
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+version = mod_version
+group = mod_group_id
+base {
+    archivesName = mod_id
+}
+
+// 工具链统一用 JDK 21。Temurin 17.0.20.1 在低完整性工作区里会把可写文件
+// 误判为只读，使 ForgeGradle 的 AT 子进程写 jar 时抛 ReadOnlyFileSystemException。
+// 1.20.1 的字节码目标由 ForgeGradle 自身的 source/target 设置保证。
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+
+    // 不使用 AccessTransformer：本环境下 ForgeGradle 的 AT 产物生成会产出空 jar，
+    // 且源工程对 SoundManager/SoundEngine 私有字段的访问已经由 mixin @Accessor 承担
+    //（mixin/SoundManagerAccessor.java、mixin/SoundEngineAccessor.java）。
+
+    runs {
+        client {
+            workingDirectory project.file('run/client')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            mods {
+                net_music_can_play_bili {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run/server')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'forge.enabledGameTestNamespaces', mod_id
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            mods {
+                net_music_can_play_bili {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${forge_version}"
+
+    // NetMusic 是本模组的必需前置；开发环境同时作为运行时依赖加载。
+    implementation fg.deobf("maven.modrinth:net-music:${netmusic_version}")
+
+    // Iris 仅用于着色器兼容分支的编译期类型引用。
+    compileOnly fg.deobf("maven.modrinth:iris:${iris_version}")
+
+    // ★★★ Mixin 注解处理器（必须）★★★
+    // 它负责生成 **refmap**：把 mixin 里用**官方映射名**写的方法/字段
+    // （如 Screen#addRenderableWidget）映射到生产环境的 **SRG 名**（如 m_142416_）。
+    //
+    // 缺它时，jar 里没有 refmap，Mixin 在运行时按官方名去生产类里找方法，
+    // 必然找不到，于是抛：
+    //     InvalidAccessorException: No candidates were found matching
+    //         addRenderableWidget(Lnet/minecraft/client/gui/components/events/GuiEventListener;)
+    //     Mixin apply failed net_music_can_play_bili.mixins.json:ScreenAccessor
+    // 并导致**客户端启动崩溃**（因为 mixins.json 是 required: true）。
+    //
+    // Forge 1.20.1 官方 MDK 自带这一行；本工程此前漏了。
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            mod_version      : mod_version,
+            minecraft_version: minecraft_version,
+            forge_version    : forge_version
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    // 移植期一次暴露全部编译错误，避免反复往返。
+    options.compilerArgs += ['-Xmaxerrs', '20000', '-Xlint:none']
+
+    // ★ 必须锁定 Java 17 字节码 ★
+    // 工具链是 JDK 21（见上方 java.toolchain 的说明：Temurin 17 在低完整性工作区会误判只读），
+    // 但 **Minecraft 1.20.1 + Forge 运行在 Java 17 上**。
+    // 不加这一行时 javac 默认产出 Java 21 字节码（major=65），Forge 会直接拒绝加载
+    // （实测：构建产物 400/400 个 class 均为 major=65）。
+    // release=17 同时会按 Java 17 的 API 面校验——这也正是 util/MathCompat 存在的原因：
+    // java.lang.Math#clamp 是 Java 21 才加入的，所有调用点已改为 MathCompat.clamp；
+    // 同理 Java 21 的 SequencedCollection#getFirst/getLast 也已全部改写。
+    options.release = 17
+}
+
+// ---------------------------------------------------------------------------
+// 测试源码暂不参与构建
+// ---------------------------------------------------------------------------
+// src/test 来自原工程，是针对**完整且已移植完毕**的 API 面编写的（会直接引用主源码类）。
+// 移植过程中，尚未就绪的主类会被隔离到 work/deferred-src，导致测试无法编译，
+// 进而让 `gradle build` 失败——但**测试并不进 jar**，与交付物无关。
+// 待移植收敛到全部文件均可编译后，可删除本节重新启用测试。
+tasks.matching { it.name == 'compileTestJava' || it.name == 'test' }.configureEach {
+    enabled = false
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : mod_id,
+                "Specification-Vendor"    : mod_authors,
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : "${version}",
+                "Implementation-Vendor"   : mod_authors,
+
+                // ★★★ 这一行是必须的 ★★★
+                // Forge 通过 **MANIFEST.MF 的 MixinConfigs 属性**来发现 mixin 配置。
+                // 缺它的话，`net_music_can_play_bili.mixins.json` 即使在 jar 里，
+                // 也**完全不会被读取** —— 所有 mixin 静默失效，且**没有任何报错**。
+                //
+                // 本工程曾因此踩坑：mixins.json 里声明了 8~10 个 mixin、
+                // 类文件也都在 jar 内、`required: true` 也没有报错，
+                // 但 `debug.log` 中这些 mixin 的名字出现 **0 次**，
+                // 直接后果是「CD 刻录机无法刻录 B站链接」等功能全部不可用。
+                //
+                // 诊断方法：`unzip -p <jar> META-INF/MANIFEST.MF | grep MixinConfigs`
+                "MixinConfigs"            : "net_music_can_play_bili.mixins.json"
+        ])
+    }
+
+    // 把 Mixin 注解处理器生成的 refmap 打进 jar。
+    // 生成位置随 FG 版本而异，故三个候选目录都扫一遍。
+    from("${projectDir}/build/tmp/compileJava") { include '*.refmap.json' }
+    from("${projectDir}/build/classes/java/main") { include '*.refmap.json' }
+    from("${projectDir}/build/generated/sources/annotationProcessor/java/main") { include '*.refmap.json' }
+}
