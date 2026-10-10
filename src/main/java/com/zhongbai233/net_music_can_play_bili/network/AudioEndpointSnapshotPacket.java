@@ -107,14 +107,10 @@ public record AudioEndpointSnapshotPacket(UUID sourceId, BlockPos sourcePos, Are
 
     public static void handle(AudioEndpointSnapshotPacket payload, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            // 1.20.1 最小可用版本：ClientAudioEndpointIndex 未提供 accept(AudioEndpointSnapshotPacket)
-            // （该项目 1.20.1 版只有 audibleDemands/geometricDemands/endpointSnapshot 等查询方法）。
-            // 原实现：ClientAudioEndpointIndex.accept(payload);
-            if (payload == null) {
-                return;
-            }
-        });
+        // ★ 1.20.1 已恢复调用：ClientAudioEndpointIndex.accept(AudioEndpointSnapshotPacket)
+        // 现在**存在**（见该类第 28 行；旧基线注释说它只有查询方法，那个说法已经过时）。
+        // 不恢复的后果：服务端的音频端点快照被客户端丢弃 → 听者定位/按距离分配音量都不生效。
+        context.enqueueWork(() -> ClientAudioEndpointIndex.accept(payload));
         context.setPacketHandled(true);
     }
 

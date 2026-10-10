@@ -82,11 +82,12 @@ public record ControlConsoleConfigResultPacket(BlockPos pos, UUID operationId, l
 
     public static void handle(ControlConsoleConfigResultPacket payload, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            // 1.20.1 最小可用版本：HolographicScreenConfigTestScreen 尚未迁移，暂不应用配置结果。
-            // 原实现：com.zhongbai233.net_music_can_play_bili.gui.HolographicScreenConfigTestScreen
-            //         .acceptControlConsoleConfigResult(payload);
-        });
+        // ★ 1.20.1 已恢复调用（旧基线移植时这里是空桩）。
+        // 目标就是 gui.HolographicScreenConfigTestScreen —— 与 1.21.1 分支的调用形态一致；
+        // 真正的分发逻辑在包私有的 HolographicEditorLifecycleScreen 里，
+        // 由该 public 转发方法进入（见其 javadoc 里的可见性说明）。
+        context.enqueueWork(() -> com.zhongbai233.net_music_can_play_bili.gui.HolographicScreenConfigTestScreen
+                .acceptControlConsoleConfigResult(payload));
         context.setPacketHandled(true);
     }
 

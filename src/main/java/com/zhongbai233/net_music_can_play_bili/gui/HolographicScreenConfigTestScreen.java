@@ -39,6 +39,21 @@ public class HolographicScreenConfigTestScreen extends HolographicEditorInputScr
         }
     }
 
+    /**
+     * 网络包入口：把中控台配置结果转交给当前打开的界面。
+     *
+     * <p><b>1.20.1 移植说明</b>：真正的分发逻辑在
+     * {@link HolographicEditorLifecycleScreen#acceptControlConsoleConfigResult}（该类是<b>包私有</b>的
+     * abstract 基类，网络包在别的包，直接调用会编译失败——实测报
+     * {@code HolographicEditorLifecycleScreen is not public ... cannot be accessed from outside package}）。
+     * 1.21.1 分支里网络包调用的就是<b>本类</b>的同名方法，故在这里加一个 public 转发，
+     * 既恢复了调用（旧基线移植时它是空桩），又不必放宽基类的可见性。</p>
+     */
+    public static void acceptControlConsoleConfigResult(
+            com.zhongbai233.net_music_can_play_bili.network.ControlConsoleConfigResultPacket result) {
+        HolographicEditorLifecycleScreen.acceptControlConsoleConfigResult(result);
+    }
+
     public static HolographicScreenConfigTestScreen forControlConsole(BlockPos pos) {
         HolographicScreenConfigTestScreen screen = new HolographicScreenConfigTestScreen(false,
                 java.util.Objects.requireNonNull(pos, "pos"));

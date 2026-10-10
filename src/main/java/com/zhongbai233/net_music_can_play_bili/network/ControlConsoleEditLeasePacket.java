@@ -61,12 +61,20 @@ public record ControlConsoleEditLeasePacket(BlockPos pos, Action action, UUID le
                 ControlConsoleEditLeaseRegistry.release(key, player.getUUID(), payload.leaseId());
                 return;
             }
-            if (!NetworkRateLimiter.allow(player.getUUID(), "control_console_edit_lease", 4)
-                    || player.position().distanceToSqr(Vec3.atCenterOf(payload.pos())) > 64.0D
-                    || !level.hasChunk(Math.floorDiv(payload.pos().getX(), 16),
-                        Math.floorDiv(payload.pos().getZ(), 16))
-                    // TODO(1.20.1): 依赖待移植 — ControlConsoleBlockEntity
-                    || !(level.getBlockEntity(payload.pos()) instanceof ControlConsoleBlockEntity console)) {
+            // [中控台探针] 定位"右键打不开"用；定位完成后删除（把每个条件拆开，日志里直接看出是哪一条拦下的）。
+            boolean rateOk = NetworkRateLimiter.allow(player.getUUID(), "control_console_edit_lease", 4);
+            double distSqr = player.position().distanceToSqr(Vec3.atCenterOf(payload.pos()));
+            boolean chunkOk = level.hasChunk(Math.floorDiv(payload.pos().getX(), 16),
+                    Math.floorDiv(payload.pos().getZ(), 16));
+            var be = level.getBlockEntity(payload.pos());
+            com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
+                    "[中控台探针] 服务端收到 {} pos={} 限流={} 距离平方={} 区块已加载={} 方块实体={}",
+                    payload.action(), payload.pos(), rateOk, distSqr, chunkOk,
+                    be == null ? "null" : be.getClass().getName());
+            if (!rateOk || distSqr > 64.0D || !chunkOk
+                    || !(be instanceof ControlConsoleBlockEntity console)) {
+                com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
+                        "[中控台探针] 服务端拒绝（REJECTED）并已回包");
                 send(player, payload.pos(), ControlConsoleEditLeaseResultPacket.Status.REJECTED, null);
                 return;
             }
@@ -78,6 +86,9 @@ public record ControlConsoleEditLeasePacket(BlockPos pos, Action action, UUID le
             long now = System.currentTimeMillis();
             if (payload.action() == Action.OPEN) {
                 var result = ControlConsoleEditLeaseRegistry.acquire(key, player.getUUID(), now);
+                // [中控台探针] 定位"右键打不开"用；定位完成后删除。
+                com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
+                        "[中控台探针] 租约 acquire 结果 status={} leaseId={}", result.status(), result.leaseId());
                 send(player, payload.pos(), result.status() == ControlConsoleEditLeaseRegistry.Status.GRANTED
                         ? ControlConsoleEditLeaseResultPacket.Status.GRANTED
                         : ControlConsoleEditLeaseResultPacket.Status.BUSY, result.leaseId());

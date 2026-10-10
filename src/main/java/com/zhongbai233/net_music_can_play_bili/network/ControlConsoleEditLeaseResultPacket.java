@@ -44,11 +44,11 @@ public record ControlConsoleEditLeaseResultPacket(BlockPos pos, Status status, U
     public static void handle(ControlConsoleEditLeaseResultPacket payload,
             Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            // 1.20.1 最小可用版本：ControlConsoleClient 尚未迁移，暂不应用编辑租约结果。
-            // 原实现：com.zhongbai233.net_music_can_play_bili.client.ControlConsoleClient
-            //         .acceptLeaseResult(payload);
-        });
+        // ★ 1.20.1 已恢复调用：ControlConsoleClient 早已迁入工程。
+        // 旧基线移植时它还没迁，这里留成了空桩——后果是「中控台右键打不开」：
+        // 服务端已经 GRANTED 并回包，客户端收到却直接丢弃，界面永远不开（实机探针实证）。
+        context.enqueueWork(() -> com.zhongbai233.net_music_can_play_bili.client.ControlConsoleClient
+                .acceptLeaseResult(payload));
         context.setPacketHandled(true);
     }
 

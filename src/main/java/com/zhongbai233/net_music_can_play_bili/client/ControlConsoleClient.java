@@ -19,6 +19,11 @@ public final class ControlConsoleClient {
     }
 
     public static void openScreen(BlockPos pos) {
+        // [中控台探针] 定位"右键打不开"用；定位完成后删除。
+        com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
+                "[中控台探针] openScreen 进入 pos={} level={} player={} pendingOpen={} activeLease={}",
+                pos, Minecraft.getInstance().level != null, Minecraft.getInstance().player != null, pendingOpen,
+                activeLease);
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null && minecraft.player != null) {
             BlockPos immutablePos = pos.immutable();
@@ -30,6 +35,9 @@ public final class ControlConsoleClient {
                 releaseLease(activeLease.pos());
             }
             pendingOpen = immutablePos;
+            // [中控台探针] 定位"右键打不开"用；定位完成后删除。
+            com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
+                    "[中控台探针] 客户端发送 OPEN 租约请求 pos={}", immutablePos);
             NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
                     .ControlConsoleEditLeasePacket(pos,
                     com.zhongbai233.net_music_can_play_bili.network.ControlConsoleEditLeasePacket.Action.OPEN,
@@ -39,6 +47,10 @@ public final class ControlConsoleClient {
 
     public static void acceptLeaseResult(
             com.zhongbai233.net_music_can_play_bili.network.ControlConsoleEditLeaseResultPacket result) {
+        // [中控台探针] 定位"右键打不开"用；定位完成后删除。
+        com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
+                "[中控台探针] 收到租约结果 pos={} status={} leaseId={} pendingOpen={} activeLease={}",
+                result.pos(), result.status(), result.leaseId(), pendingOpen, activeLease);
         Minecraft minecraft = Minecraft.getInstance();
         if (activeLease != null && activeLease.pos().equals(result.pos())) {
             if (result.status() == com.zhongbai233.net_music_can_play_bili.network
@@ -84,7 +96,13 @@ public final class ControlConsoleClient {
         if (minecraft.level == null || minecraft.player == null) {
             return;
         }
-        if (ClientPlayerPreferences.defaults().isControlConsoleGuideDismissed(minecraft.player.getUUID())) {
+        boolean guideDismissed = ClientPlayerPreferences.defaults()
+                .isControlConsoleGuideDismissed(minecraft.player.getUUID());
+        // [中控台探针] 定位"右键打不开"用；定位完成后删除。
+        com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.LOGGER.info(
+                "[中控台探针] 打开界面 pos={} 引导页已忽略={} → {}", pos, guideDismissed,
+                guideDismissed ? "编辑器 HolographicScreenConfigTestScreen" : "引导页 ControlConsoleGuideScreen");
+        if (guideDismissed) {
             openEditor(pos);
         } else {
             minecraft.setScreen(new ControlConsoleGuideScreen(pos));

@@ -71,11 +71,10 @@ public record ControlConsoleConsumerLeaseResultPacket(BlockPos pos, Status statu
     public static void handle(ControlConsoleConsumerLeaseResultPacket payload,
             Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            // 1.20.1 最小可用版本：ControlConsoleRenderer 尚未迁移，暂不应用消费资格结果。
-            // 原实现：com.zhongbai233.net_music_can_play_bili.client.renderer.ControlConsoleRenderer
-            //         .acceptConsumerLeaseResult(payload);
-        });
+        // ★ 1.20.1 已恢复调用：ControlConsoleRenderer 已迁入工程
+        // （同名方法在 ControlConsoleRenderer:550）。旧基线移植时留成了空桩。
+        context.enqueueWork(() -> com.zhongbai233.net_music_can_play_bili.client.renderer.ControlConsoleRenderer
+                .acceptConsumerLeaseResult(payload));
         context.setPacketHandled(true);
     }
 
