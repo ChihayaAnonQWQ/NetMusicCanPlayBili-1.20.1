@@ -1,4 +1,39 @@
-build/
-.gradle/
+# MacOS
+.DS_Store
+
+# Gradle
+.gradle
+build
+bin
+repo
+
+# IDE
+.vscode/
+.idea
+*.iml
+out/
+.settings/
+.classpath
+.project
+.idea_modules/
+
+# 运行目录（实测产物，非源码）
 run/
+logs/
+hs_err_pid*
+crash-reports/
 *.log
+
+# 移植工作区本地材料（参考反编译/日志，非源码）
+port-ref/
+.port-analysis/
+compile-err-*.txt
+test-err-*.txt
+test-run-*.txt
+run-client-*.txt
+run-server-*.txt
+*.stackdump
+
+# 复审/复现构建日志
+recheck-*.log
+*-build.log
