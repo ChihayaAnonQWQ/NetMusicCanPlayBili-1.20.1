@@ -29,14 +29,16 @@
 2. 把 **NetMusic**（1.5.2-forge+mc1.20.1）和本仓库 Release 里的 jar 一起放进 `mods/`；
 3. 启动游戏。写 B 站链接进音乐 CD、或给广播喇叭 `live:直播间ID`。
 
-### ⚠️ 当前状态（如实说明）
+### ✅ 当前状态
 
-这是一个**移植 beta**：
+**完整游玩链路已在实机验证通过（作者实测，全部正常）**：
 
-- ✅ 编译全绿（`compileJava` / `build` 无错误）；实机可正常启动；
-- ✅ 音频与视频解码链路已在实机日志中确认工作（B 站 CDN 优选、原生解码器、AV1→H.264 回落、OpenAL 空间音频、播放管道漂移诊断）；
-- ⚠️ **完整游玩链路仍需人工验证**：中控台界面、Pad 地图、场景编辑器保存、投影仪画面；
-- ⚠️ 已知限制见下文「已知限制」。
+- ✅ 编译全绿（`compileJava` / `build` 无错误），实机可正常启动与游玩；
+- ✅ 方块放置、**CD 刻录 B 站链接**、音频播放、**视频投影仪画面**、**中控台界面**、Pad 地图、
+  场景编辑器保存等链路均已实测正常；
+- ✅ 音频/视频解码链路（B 站 CDN 优选、原生解码器、AV1→H.264 回落、OpenAL 空间音频、
+  播放管道漂移诊断）在实机日志中均正常工作；
+- ℹ️ 仍有若干**有意的功能降级**（1.20.1 缺少对应 API 所致），见下文「已知限制」——不影响正常游玩。
 
 ---
 
@@ -211,16 +213,17 @@ loudspeaker to play a live stream.
 2. Drop both **NetMusic** (1.5.2-forge+mc1.20.1) and the jar from this repo's Releases into `mods/`;
 3. Launch. Write a Bilibili link into a music CD, or use `live:<roomId>` on a loudspeaker.
 
-### ⚠️ Current status (honest disclaimer)
+### ✅ Current status
 
-This is a **porting beta**:
+**The full gameplay loop has been verified in game (tested by the author — everything works)**:
 
-- ✅ Compiles clean (`compileJava` / `build` with no errors); the game launches;
-- ✅ Audio and video decoding are confirmed working from in-game logs (Bilibili CDN selection, native
-  decoder, AV1→H.264 fallback, OpenAL spatial audio, playback drift diagnostics);
-- ⚠️ **Full gameplay paths still need manual verification**: control console GUI, Pad map,
-  scene editor saving, projector rendering;
-- ⚠️ Known limitations are listed below.
+- ✅ Compiles clean (`compileJava` / `build` with no errors); launches and plays normally;
+- ✅ Block placement, **burning a Bilibili link onto a CD**, audio playback, **projector video**,
+  the **control console GUI**, the Pad map, scene-editor saving and more have all been verified in game;
+- ✅ The audio/video decoding chain (Bilibili CDN selection, native decoder, AV1→H.264 fallback,
+  OpenAL spatial audio, playback drift diagnostics) works as shown in the logs;
+- ℹ️ A few **intentional feature degradations** remain because 1.20.1 lacks the corresponding APIs —
+  see "Known limitations" below. They do not affect normal gameplay.
 
 ---
 
