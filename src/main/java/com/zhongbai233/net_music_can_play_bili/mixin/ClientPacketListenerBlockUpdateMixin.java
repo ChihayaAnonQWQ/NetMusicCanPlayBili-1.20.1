@@ -32,7 +32,7 @@ public abstract class ClientPacketListenerBlockUpdateMixin {
     private void net_music_can_play_bili$markSingleBlockDirty(ClientboundBlockUpdatePacket packet, CallbackInfo ci) {
         BlockPos pos = packet.getPos();
         if (net_music_can_play_bili$isLoaded(pos.getX(), pos.getZ())) {
-            ClientLevel level = net_music_can_play_bili$level();
+            ClientLevel level = net_music_can_play_bili$currentLevel();
             PadMapClientCache.markBlockDirty(level, pos);
             TerrainPreviewManager.markBlockDirty(level, pos);
         }
@@ -43,21 +43,29 @@ public abstract class ClientPacketListenerBlockUpdateMixin {
             CallbackInfo ci) {
         packet.runUpdates((pos, state) -> {
             if (net_music_can_play_bili$isLoaded(pos.getX(), pos.getZ())) {
-                ClientLevel level = net_music_can_play_bili$level();
+                ClientLevel level = net_music_can_play_bili$currentLevel();
                 PadMapClientCache.markChunkDirty(level, Math.floorDiv(pos.getX(), 16), Math.floorDiv(pos.getZ(), 16));
                 TerrainPreviewManager.markBlockDirty(level, pos);
             }
         });
     }
 
-    /** 目标类的私有 {@code level} 字段（经 accessor 接口读取，见类注释）。 */
+    /**
+     * 目标类的私有 {@code level} 字段（经 accessor 接口读取，见类注释）。
+     *
+     * <p><b>方法名不能叫 net_music_can_play_bili$level</b>——那与
+     * {@link ClientPacketListenerAccessor} 里 accessor 方法的<b>名字完全相同</b>，
+     * 两个方法会被合并进同一个目标类，Mixin 报
+     * {@code Method overwrite conflict ... Skipping method} 并跳过其中一个（实机日志实证）。
+     * 故这里改名，与 accessor 的方法名区分开。</p>
+     */
     @Unique
-    private ClientLevel net_music_can_play_bili$level() {
+    private ClientLevel net_music_can_play_bili$currentLevel() {
         return ((ClientPacketListenerAccessor) (Object) this).net_music_can_play_bili$level();
     }
 
     private boolean net_music_can_play_bili$isLoaded(int blockX, int blockZ) {
-        ClientLevel level = net_music_can_play_bili$level();
+        ClientLevel level = net_music_can_play_bili$currentLevel();
         return level != null && level.getChunkSource().hasChunk(Math.floorDiv(blockX, 16), Math.floorDiv(blockZ, 16));
     }
 }

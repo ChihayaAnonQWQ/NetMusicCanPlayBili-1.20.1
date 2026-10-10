@@ -24,8 +24,6 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
@@ -64,7 +62,6 @@ public class NetMusicCanPlayBili {
         // 1.20.1 的网络注册入口（不是事件监听器）：init 会强制 CHANNEL 静态初始化，
         // 并在 FMLCommonSetupEvent 里 enqueueWork 去注册所有包。
         ModernTurntableNetwork.init(modEventBus);
-        modEventBus.addListener(this::registerCapabilities);
         MinecraftForge.EVENT_BUS.addListener(NetMusicPermissions::onPermissionGather);
         MinecraftForge.EVENT_BUS.addListener(NetMusicBiliServerCommands::onRegisterCommands);
         MinecraftForge.EVENT_BUS.addListener(PadMapScopeSync::onPlayerLoggedIn);
@@ -98,20 +95,24 @@ public class NetMusicCanPlayBili {
         }
     }
 
-    /**
-     * 1.20.1 的能力注册与 1.21.1 不同：
-     * <ul>
-     *   <li>NeoForge 用 {@code event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, type, provider)}
-     *       一次性把能力挂到「方块实体类型」上；Forge 1.20.1 的 {@link RegisterCapabilitiesEvent}
-     *       只有 {@code register(Class)}，它只负责<b>声明</b>某个能力接口会被注册。</li>
-     *   <li>真正把能力暴露出去是在方块实体里覆写
-     *       {@code BlockEntity#getCapability(Capability, Direction)} —— 见
-     *       {@code ModernTurntableBlockEntity#getCapability}。</li>
-     * </ul>
+    /*
+     * ── 能力（capability）注册：1.20.1 的正确做法是「什么都不用注册」 ──
+     *
+     * 1.21.1/NeoForge 的写法是
+     *   event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, 方块实体类型, provider)，
+     * 一次性把能力挂到「方块实体类型」上。
+     *
+     * Forge 1.20.1 没有那个方法，它的等价做法是：在方块实体里覆写
+     *   BlockEntity#getCapability(Capability, Direction)
+     * （见 ModernTurntableBlockEntity#getCapability）。
+     *
+     * ★ 而 RegisterCapabilitiesEvent#register(Class) **不能**用来登记 Forge 自带的能力：
+     *   它内部走 CapabilityManager.get(token)，已注册过就会抛
+     *     IllegalArgumentException: Cannot register a capability implementation multiple times
+     *   —— IItemHandler 由 Forge 自己注册（ForgeCapabilities.ITEM_HANDLER），
+     *   我们在这里再登记一次会**直接导致客户端在 common_setup 阶段崩溃**（2026-10-10 14:23 实机日志实证）。
+     *   该方法只适用于「模组自己新定义的能力接口」，本模组没有自定义能力，故整段删除。
      */
-    private void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.register(IItemHandler.class);
-    }
 
     private static void registerDevelopmentSelfTests() {
         if (PadDiagnosticsProperties.mapServerSelfTestEnabled()) {
