@@ -20,7 +20,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  * 无法用 {@code @Shadow} 实例字段——所以改用本 accessor 接口：
  * 注入器里把 message 实例转型为本接口即可读取字段。</p>
  */
-@Mixin(MusicToClientMessage.class)
+// remap = false：目标是前置模组 NetMusic 的类，它不参与 Minecraft 的名称重映射
+// （生产环境只把 MC 的成员名变成 SRG），字段名 pos/url/rawUrl/timeSecond/songName 是字面量。
+// 显式写出来既符合语义，也让 work/check_refmap_coverage.py 能正确地把本类归为"无需 refmap"。
+@Mixin(value = MusicToClientMessage.class, remap = false)
 public interface MusicToClientMessageAccessor {
     @Accessor("pos")
     BlockPos ncpb$pos();

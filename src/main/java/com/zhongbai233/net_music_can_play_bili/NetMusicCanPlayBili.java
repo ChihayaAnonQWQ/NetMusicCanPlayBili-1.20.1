@@ -20,9 +20,9 @@ import com.zhongbai233.net_music_can_play_bili.server.PadMapScopeSync;
 import com.zhongbai233.net_music_can_play_bili.server.PlaybackAuditManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.items.IItemHandler;
@@ -36,7 +36,25 @@ public class NetMusicCanPlayBili {
     /** 模组级日志器。1.20.1 移植：其他包（server/link 等）也在用，故不是 private。 */
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public NetMusicCanPlayBili(IEventBus modEventBus, ModContainer modContainer) {
+    /**
+     * 模组入口。
+     *
+     * <p><b>1.20.1 移植说明（实机崩溃实证）</b>：1.21.1/NeoForge 允许在 {@code @Mod} 类上写
+     * {@code (IEventBus, ModContainer)} 构造器（依赖注入）。<b>Forge 1.20.1 不支持</b>——
+     * {@code FMLModContainer#constructMod} 的字节码就是
+     * {@code modClass.getDeclaredConstructor()}（<b>零参</b>），
+     * 实机日志因此报：
+     * <pre>
+     * Failed to create mod instance. ModID: net_music_can_play_bili
+     * java.lang.NoSuchMethodException: com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili.&lt;init&gt;()
+     * </pre>
+     * 故改为无参构造器，并像 Forge MDK 那样从
+     * {@code FMLJavaModLoadingContext.get().getModEventBus()} 取事件总线。
+     * （配置注册原本用的 {@code modContainer} 已在前面改成
+     * {@code ModLoadingContext.get().registerConfig(...)}，不再需要它。）</p>
+     */
+    public NetMusicCanPlayBili() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         ModAttributes.ATTRIBUTES.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
