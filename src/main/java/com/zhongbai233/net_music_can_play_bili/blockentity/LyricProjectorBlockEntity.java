@@ -7,6 +7,7 @@ import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nullable;
 
@@ -168,6 +169,26 @@ public class LyricProjectorBlockEntity extends SyncedBlockEntity {
     public void setProjectionDistanceZ(float v) {
         this.projectionDistanceZ = v;
         setChanged();
+    }
+
+    /**
+     * 1.20.1 渲染裁剪包围盒。
+     *
+     * <p><b>钩子位置</b>：1.21 的 Forge 把 {@code getRenderBoundingBox(T)} 定义在
+     * {@code IForgeBlockEntityRenderer} 上（所以 BER 里那份曾是 {@code @Override}）；
+     * 1.20.1 的 {@code BlockEntityRenderer} <b>没有</b>这个方法（javap 已确证），钩子在
+     * {@code IForgeBlockEntity#getRenderBoundingBox()}——挂在 BlockEntity 上
+     * （javap 实证 {@code public default AABB getRenderBoundingBox()}）。故这里是唯一生效点，
+     * {@code client/renderer/LyricProjectorRenderer#getRenderBoundingBox(be)} 只剩内部调用。</p>
+     *
+     * <p>盒子公式与 {@code LyricProjectorRenderer:348-360} 逐行一致（投影偏移半径 + 文本半径 + 余量，
+     * 以方块为球心膨胀），见 {@link BlockEntityRenderBounds#lyricProjector}。
+     * 全部输入都来自本方块实体自己的字段，无客户端状态依赖。</p>
+     */
+    @Override
+    public AABB getRenderBoundingBox() {
+        return BlockEntityRenderBounds.lyricProjector(getBlockPos(), getProjectionScale(),
+                getProjectionDistanceX(), getProjectionHeight(), getProjectionDistanceZ());
     }
 
     public int getProjectionMode() {

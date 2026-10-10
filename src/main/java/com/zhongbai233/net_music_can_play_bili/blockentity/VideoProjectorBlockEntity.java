@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nullable;
 
@@ -215,6 +216,33 @@ public class VideoProjectorBlockEntity extends SyncedBlockEntity {
         }
     }
 
+
+    /**
+     * 1.20.1 渲染裁剪包围盒。
+     *
+     * <p><b>钩子位置</b>：1.21 的 Forge 把 {@code getRenderBoundingBox(T)} 定义在
+     * {@code IForgeBlockEntityRenderer} 上（所以 BER 里那份曾是 {@code @Override}）；
+     * 1.20.1 的 {@code BlockEntityRenderer} <b>没有</b>这个方法（javap 已确证），钩子在
+     * {@code IForgeBlockEntity#getRenderBoundingBox()}——挂在 BlockEntity 上
+     * （javap 实证 {@code public default AABB getRenderBoundingBox()}）。故这里是唯一生效点，
+     * {@code client/renderer/VideoProjectorRenderer#getRenderBoundingBox(be)} 只剩内部调用（该类
+     * {@code shouldRender} 仍在用它做距离判断，不要删）。</p>
+     *
+     * <p>几何公式与 {@code VideoProjectorRenderer:178-189} 一致（旋转投影四边形的世界 AABB），
+     * 见 {@link BlockEntityRenderBounds#videoProjector}。</p>
+     *
+     * <p><b>已知差异（无法在 BE 侧消除）</b>：BER 会用客户端解码器当前帧的 width/height 推导真实
+     * 画面宽高比（{@code VideoBillboardPreview.currentProjectorDisplayFrame}，client 包类，BE 不能引用），
+     * 本方法只能使用它的默认回退值 16:9。播放非 16:9 画面时，本裁剪盒在水平方向会比 BER 自己的盒子窄，
+     * 极端宽幅画面仍可能被提前裁剪——需要客户端把真实宽高比传给
+     * {@link BlockEntityRenderBounds#videoProjector(BlockPos, double, double, double, double, double, double, double)} 才能完全对齐。</p>
+     */
+    @Override
+    public AABB getRenderBoundingBox() {
+        return BlockEntityRenderBounds.videoProjector(getBlockPos(), getProjectionDistanceX(),
+                getProjectionHeight(), getProjectionDistanceZ(), getProjectionYaw(),
+                getProjectionPitch(), getProjectionScale());
+    }
 
     private void refreshClientLinkRegistration() {
         if (level != null && level.isClientSide()) {

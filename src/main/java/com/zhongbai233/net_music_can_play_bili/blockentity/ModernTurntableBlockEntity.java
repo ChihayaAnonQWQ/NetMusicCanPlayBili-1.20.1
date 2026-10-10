@@ -1035,6 +1035,26 @@ public class ModernTurntableBlockEntity extends BlockEntity implements PlaybackA
         return saveWithoutMetadata();
     }
 
+    /**
+     * 1.20.1 渲染裁剪包围盒。
+     *
+     * <p><b>钩子位置</b>：1.21 的 Forge 把 {@code getRenderBoundingBox(T)} 定义在
+     * {@code IForgeBlockEntityRenderer} 上（所以 BER 里那份曾是 {@code @Override}）；
+     * 1.20.1 的 {@code BlockEntityRenderer} <b>没有</b>这个方法（javap 已确证），钩子在
+     * {@code IForgeBlockEntity#getRenderBoundingBox()}——挂在 BlockEntity 上
+     * （javap 实证 {@code public default AABB getRenderBoundingBox()}，
+     * 且 {@code BlockEntity implements IForgeBlockEntity}）。故这里是唯一生效点，
+     * {@code client/renderer/ModernTurntableRenderer#getRenderBoundingBox(be)} 只剩内部调用。</p>
+     *
+     * <p>盒子公式与 {@code ModernTurntableRenderer:137} 完全一致：
+     * {@code new AABB(blockPos).inflate(1.0, 2.5, 1.0)}，见
+     * {@link BlockEntityRenderBounds#turntable}。</p>
+     */
+    @Override
+    public AABB getRenderBoundingBox() {
+        return BlockEntityRenderBounds.turntable(getBlockPos());
+    }
+
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
