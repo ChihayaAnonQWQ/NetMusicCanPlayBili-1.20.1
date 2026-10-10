@@ -3,6 +3,8 @@ package com.zhongbai233.net_music_can_play_bili.terrain.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * 不分配完整 coverage 的有界游标。水平面从相机所在 section 按方环向外扫描，
  * 每次调用最多检查 {@code candidateBudget} 个 section 候选。
@@ -31,8 +33,8 @@ public final class TerrainCoverageCursor {
         maxX = Math.floorDiv(bounds.maxX(), TerrainSectionKey.SIZE);
         maxY = Math.floorDiv(bounds.maxY(), TerrainSectionKey.SIZE);
         maxZ = Math.floorDiv(bounds.maxZ(), TerrainSectionKey.SIZE);
-        centerX = Math.clamp(focus.x(), minX, maxX);
-        centerZ = Math.clamp(focus.z(), minZ, maxZ);
+        centerX = MathCompat.clamp(focus.x(), minX, maxX);
+        centerZ = MathCompat.clamp(focus.z(), minZ, maxZ);
         maxRing = Math.max(Math.max(centerX - minX, maxX - centerX),
                 Math.max(centerZ - minZ, maxZ - centerZ));
         y = minY;

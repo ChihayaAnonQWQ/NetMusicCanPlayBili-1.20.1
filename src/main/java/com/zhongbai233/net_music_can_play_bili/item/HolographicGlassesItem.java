@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.item;
 
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import com.zhongbai233.net_music_can_play_bili.init.ModAttributes;
 import com.zhongbai233.net_music_can_play_bili.link.HolographicGlassesAbility;
 import com.zhongbai233.net_music_can_play_bili.link.HolographicScreenSettings;
 import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
@@ -14,6 +17,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.Item;
@@ -70,8 +75,24 @@ public class HolographicGlassesItem extends Item implements Equipable {
     }
 
     @Override
-    public net.minecraft.core.Holder<SoundEvent> getEquipSound() {
+    public SoundEvent getEquipSound() {
         return SoundEvents.ARMOR_EQUIP_GENERIC;
+    }
+
+    /**
+     * 1.21.1 用 {@code Item.Properties#attributes(ItemAttributeModifiers)} 声明「戴上即生效」的属性；
+     * 1.20.1 没有属性修饰符组件，等价能力由本覆写提供（与原版 {@code ArmorItem} 同款做法，
+     * {@code LivingEntity} 会读取它的返回值）。
+     * {@link HolographicGlassesAbility} 正是靠这个修饰符判定玩家是否戴着全息眼镜。
+     */
+    @Override
+    public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
+        if (slot != EquipmentSlot.HEAD) {
+            return super.getDefaultAttributeModifiers(slot);
+        }
+        return ImmutableMultimap.of(ModAttributes.HOLOGRAPHIC_GLASSES.get(),
+                new AttributeModifier(ModAttributes.HOLOGRAPHIC_GLASSES_MODIFIER_ID, "holographic_glasses", 1.0D,
+                        AttributeModifier.Operation.ADDITION));
     }
 
     public static boolean addOrUpdateBoundMedia(ItemStack stack, MediaSource source) {
@@ -292,7 +313,7 @@ public class HolographicGlassesItem extends Item implements Equipable {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents,
+    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents,
             TooltipFlag flag) {
         tooltipComponents.add(Component.translatable("tooltip.net_music_can_play_bili.holographic_glasses.protection")
                 .withStyle(ChatFormatting.GRAY));

@@ -1,17 +1,24 @@
 package com.zhongbai233.net_music_can_play_bili.link;
 
+import com.google.common.collect.Multimap;
 import com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili;
 import com.zhongbai233.net_music_can_play_bili.init.ModAttributes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
+/**
+ * 可作为全息眼镜使用的装备的共用判定。
+ *
+ * <p>与 {@link HeadphoneAbility} 同构，1.20.1 移植说明见该类；这里只把属性换成
+ * {@link ModAttributes#HOLOGRAPHIC_GLASSES}。</p>
+ */
 public final class HolographicGlassesAbility {
     public static final ResourceLocation HOLOGRAPHIC_GLASSES_ID = new ResourceLocation(NetMusicCanPlayBili.MODID,
             "holographic_glasses");
@@ -34,20 +41,13 @@ public final class HolographicGlassesAbility {
     }
 
     private static boolean hasHolographicAttribute(ItemStack stack) {
-        boolean[] found = { false };
-        stack.forEachModifier(EquipmentSlotGroup.HEAD, (attribute, modifier) -> {
-            if (attribute.is(ModAttributes.HOLOGRAPHIC_GLASSES.getKey()) && modifier.amount() > 0.0D) {
-                found[0] = true;
+        Attribute glassesAttribute = ModAttributes.HOLOGRAPHIC_GLASSES.get();
+        Multimap<Attribute, AttributeModifier> modifiers = stack.getAttributeModifiers(EquipmentSlot.HEAD);
+        for (var entry : modifiers.entries()) {
+            if (entry.getKey() == glassesAttribute && entry.getValue().amount() > 0.0D) {
+                return true;
             }
-        });
-        if (found[0]) {
-            return true;
         }
-        EnchantmentHelper.forEachModifier(stack, EquipmentSlotGroup.HEAD, (attribute, modifier) -> {
-            if (attribute.is(ModAttributes.HOLOGRAPHIC_GLASSES.getKey()) && modifier.amount() > 0.0D) {
-                found[0] = true;
-            }
-        });
-        return found[0];
+        return false;
     }
 }

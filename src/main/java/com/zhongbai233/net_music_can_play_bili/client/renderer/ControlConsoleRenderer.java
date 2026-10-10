@@ -53,6 +53,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraftforge.network.PacketDistributor;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 中控台运行时渲染器：屏幕元素复用绑定源的同一视频 session。 */
 public final class ControlConsoleRenderer
         implements BlockEntityRenderer<ControlConsoleBlockEntity> {
@@ -945,7 +947,7 @@ public final class ControlConsoleRenderer
         runtime.entryStartedNanos = 0L;
         runtime.fadingOut = true;
         runtime.fadeStartedNanos = System.nanoTime();
-        runtime.fadeBaseGain = Math.clamp(runtime.lastRangeGain, 0.0F, 1.0F);
+        runtime.fadeBaseGain = MathCompat.clamp(runtime.lastRangeGain, 0.0F, 1.0F);
     }
 
     private static void tickBurstExit(BlockPos consolePos, ConsumerState runtime) {

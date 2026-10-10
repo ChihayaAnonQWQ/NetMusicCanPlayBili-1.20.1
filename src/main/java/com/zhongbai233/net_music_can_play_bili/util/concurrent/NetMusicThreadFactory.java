@@ -4,6 +4,8 @@ import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** Shared daemon thread factory for background media/client workers. */
 public final class NetMusicThreadFactory implements ThreadFactory {
     private static final System.Logger LOGGER = System.getLogger(NetMusicThreadFactory.class.getName());
@@ -29,7 +31,7 @@ public final class NetMusicThreadFactory implements ThreadFactory {
 
     public static Thread daemonThread(String name, Runnable runnable, int priority) {
         Thread thread = daemonThread(name, runnable);
-        thread.setPriority(Math.clamp(priority, Thread.MIN_PRIORITY, Thread.MAX_PRIORITY));
+        thread.setPriority(MathCompat.clamp(priority, Thread.MIN_PRIORITY, Thread.MAX_PRIORITY));
         return thread;
     }
 

@@ -6,6 +6,8 @@ import org.joml.Vector3dc;
 
 import java.util.Optional;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 不依赖 GUI 的轴/平面射线拖动数学。 */
 public final class GizmoDragMath {
     private GizmoDragMath() {
@@ -62,7 +64,7 @@ public final class GizmoDragMath {
             throw new IllegalArgumentException("rotationRadius must be positive and finite");
         }
         double sensitivity = Math.max(1.0D, rotationRadius / GizmoSizingPolicy.MIN_ROTATION_RADIUS);
-        return (float) Math.clamp(rawDegrees * sensitivity, -180.0D, 180.0D);
+        return (float) MathCompat.clamp(rawDegrees * sensitivity, -180.0D, 180.0D);
     }
 
     /** Screen-distance ratio used by a uniform scale handle. */
@@ -71,7 +73,7 @@ public final class GizmoDragMath {
                 || !Double.isFinite(currentDistance) || currentDistance < 0.0D) {
             throw new IllegalArgumentException("scale drag distances must be finite and non-negative");
         }
-        return Math.clamp(currentDistance / startingDistance, 0.01D, 100.0D);
+        return MathCompat.clamp(currentDistance / startingDistance, 0.01D, 100.0D);
     }
 
     private static Optional<Vector3d> intersectAxis(PickingRay ray, Vector3dc origin, Vector3dc axis) {

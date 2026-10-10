@@ -378,7 +378,7 @@ public class PadItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents,
+    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents,
             TooltipFlag flag) {
         PadDocument document = readDocument(stack);
         tooltipComponents.add(Component.translatable("tooltip.net_music_can_play_bili.pad.summary",

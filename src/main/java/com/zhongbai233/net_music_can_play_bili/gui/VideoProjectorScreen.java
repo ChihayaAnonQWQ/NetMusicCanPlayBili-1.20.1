@@ -16,6 +16,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.List;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 public class VideoProjectorScreen extends BlackGoldScreen {
     private static final int[] QUALITY_VALUES = { 127, 120, 116, 112, 80, 64, 32, 16 };
     private static final List<String> QUALITY_LABELS = List.of(
@@ -109,7 +111,7 @@ public class VideoProjectorScreen extends BlackGoldScreen {
         qualityBtn = addCycleWidget(sliderX, rowY, QUALITY_LABELS, qualityIndex,
                 v -> {
                     if (be != null) {
-                        be.setPreferredQuality(QUALITY_VALUES[Math.clamp(v, 0, QUALITY_VALUES.length - 1)]);
+                        be.setPreferredQuality(QUALITY_VALUES[MathCompat.clamp(v, 0, QUALITY_VALUES.length - 1)]);
                         sendConfigToServer(be);
                         ModernTurntableVideoClient.refreshProjector(blockPos);
                     }

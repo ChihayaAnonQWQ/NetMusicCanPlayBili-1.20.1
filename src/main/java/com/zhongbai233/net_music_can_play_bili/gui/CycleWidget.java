@@ -7,6 +7,8 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * 黑金风格多选项循环切换按钮。
  * <p>
@@ -23,7 +25,7 @@ public class CycleWidget extends AbstractWidget {
             Consumer<Integer> onSwitch) {
         super(x, y, w, h, Component.empty());
         this.options = options;
-        this.index = Math.clamp(initIndex, 0, options.size() - 1);
+        this.index = MathCompat.clamp(initIndex, 0, options.size() - 1);
         this.onSwitch = onSwitch;
     }
 

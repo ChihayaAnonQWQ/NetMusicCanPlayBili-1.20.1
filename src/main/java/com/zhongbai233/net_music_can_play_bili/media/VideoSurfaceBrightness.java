@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.media;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** Intrinsic video-surface brightness. This changes pixel RGB, never world light. */
 public final class VideoSurfaceBrightness {
     public static final float MIN = 0.0F;
@@ -13,12 +16,12 @@ public final class VideoSurfaceBrightness {
         if (Float.isNaN(value)) {
             return DEFAULT;
         }
-        return Math.clamp(value, MIN, MAX);
+        return MathCompat.clamp(value, MIN, MAX);
     }
 
     public static int vertexColor(float brightness, float opacity) {
         int level = Math.round(normalize(brightness) * 255.0F);
-        int alpha = Math.round(Math.clamp(Float.isNaN(opacity) ? 1.0F : opacity, 0.0F, 1.0F) * 255.0F);
+        int alpha = Math.round(MathCompat.clamp(Float.isNaN(opacity) ? 1.0F : opacity, 0.0F, 1.0F) * 255.0F);
         return alpha << 24 | level << 16 | level << 8 | level;
     }
 }

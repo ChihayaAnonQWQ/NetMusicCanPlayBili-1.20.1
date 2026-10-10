@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** Persistent source and endpoint index that survives chunk unloads and server restarts. */
 public final class AudioPlaybackIndexSavedData extends SavedData {
     private static final String NAME = "audio_playback_index";
@@ -227,8 +229,8 @@ public final class AudioPlaybackIndexSavedData extends SavedData {
             if (endpointId == null || sourceId == null || revision < 0L) {
                 throw new IllegalArgumentException("invalid persistent audio endpoint");
             }
-            volume = Math.clamp(volume, 0.0F, 2.0F);
-            maxDistance = Math.clamp(maxDistance, 1.0F, 256.0F);
+            volume = MathCompat.clamp(volume, 0.0F, 2.0F);
+            maxDistance = MathCompat.clamp(maxDistance, 1.0F, 256.0F);
         }
 
         EndpointEntry withSourceId(String value) {

@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.media.audio;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * Single product contract for spatial audio range, fade, UI notice, and
  * server-side session delivery distance.
@@ -67,7 +70,7 @@ public final class AudioPlaybackRange {
         if (!active) {
             return new ZoneResult(false, 0.0F, margin);
         }
-        double t = Math.clamp(margin / ZONE_FADE_BAND, 0.0D, 1.0D);
+        double t = MathCompat.clamp(margin / ZONE_FADE_BAND, 0.0D, 1.0D);
         return new ZoneResult(true, smoothStep((float) t), margin);
     }
 
@@ -95,7 +98,7 @@ public final class AudioPlaybackRange {
         if (!active) {
             return new ZoneResult(false, 0.0F, margin);
         }
-        double t = Math.clamp(margin / ZONE_FADE_BAND, 0.0D, 1.0D);
+        double t = MathCompat.clamp(margin / ZONE_FADE_BAND, 0.0D, 1.0D);
         return new ZoneResult(true, smoothStep((float) t), margin);
     }
 

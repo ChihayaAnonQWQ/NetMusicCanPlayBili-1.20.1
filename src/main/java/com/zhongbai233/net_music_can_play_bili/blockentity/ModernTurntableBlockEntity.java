@@ -18,6 +18,7 @@ import com.zhongbai233.net_music_can_play_bili.link.AudioLinkIndex;
 import com.zhongbai233.net_music_can_play_bili.link.AudioPlaybackIndexSavedData;
 import com.zhongbai233.net_music_can_play_bili.server.PlaybackAuditManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
@@ -30,6 +31,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraft.world.phys.AABB;
@@ -154,6 +159,32 @@ public class ModernTurntableBlockEntity extends BlockEntity implements PlaybackA
 
     public ItemStackHandler getItemHandler() {
         return itemHandler;
+    }
+
+    /**
+     * 唱片机物品能力的暴露点。
+     *
+     * <p>1.20.1 移植说明：NeoForge（1.21.1）用
+     * {@code RegisterCapabilitiesEvent#registerBlockEntity(Capabilities.ItemHandler.BLOCK, type, provider)}
+     * 把能力一次性挂到方块实体类型上；<b>Forge 1.20.1 没有那个方法</b>，
+     * 能力必须由方块实体自己通过 {@link #getCapability} 暴露
+     * （{@code BlockEntity} 继承自 {@code CapabilityProvider}）。
+     * 注册侧只声明接口类型，见 {@code NetMusicCanPlayBili#registerCapabilities}。</p>
+     */
+    private final LazyOptional<IItemHandler> itemHandlerCapability = LazyOptional.of(this::getItemHandler);
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> capability, Direction side) {
+        if (capability == ForgeCapabilities.ITEM_HANDLER) {
+            return itemHandlerCapability.cast();
+        }
+        return super.getCapability(capability, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        itemHandlerCapability.invalidate();
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, ModernTurntableBlockEntity turntable) {

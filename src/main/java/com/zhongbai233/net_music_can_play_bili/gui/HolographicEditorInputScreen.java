@@ -30,6 +30,8 @@ import com.zhongbai233.scene_editor.core.transaction.DragTransaction;
 import com.zhongbai233.scene_editor.minecraft.input.MinecraftEditorInput;
 import com.zhongbai233.net_music_can_play_bili.link.HolographicScreenSettings;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** Mouse/keyboard navigation, selection, gizmo manipulation, and undoable scene edits. */
 abstract class HolographicEditorInputScreen extends HolographicEditorRenderScreen {
     protected HolographicEditorInputScreen(boolean bindEquippedGlasses, BlockPos controlConsolePos) {
@@ -276,7 +278,7 @@ abstract class HolographicEditorInputScreen extends HolographicEditorRenderScree
             int visibleRows = Math.max(1, (actionTop - listTop - 4) / 24);
             int maxScroll = Math.max(0, screens.size() - visibleRows);
             int previous = consoleElementScroll;
-            consoleElementScroll = Math.clamp(consoleElementScroll + (scrollY < 0.0D ? 1 : -1), 0, maxScroll);
+            consoleElementScroll = MathCompat.clamp(consoleElementScroll + (scrollY < 0.0D ? 1 : -1), 0, maxScroll);
             if (consoleElementScroll != previous) {
                 init();
                 return true;
@@ -364,7 +366,7 @@ abstract class HolographicEditorInputScreen extends HolographicEditorRenderScree
 
     protected static float boundedScale(float candidate, float previous) {
         return Float.isFinite(candidate)
-                ? Math.clamp(candidate, ControlConsoleElement.MIN_SCALE, ControlConsoleElement.MAX_SCALE)
+                ? MathCompat.clamp(candidate, ControlConsoleElement.MIN_SCALE, ControlConsoleElement.MAX_SCALE)
                 : previous;
     }
 
@@ -473,7 +475,7 @@ abstract class HolographicEditorInputScreen extends HolographicEditorRenderScree
         }
         screens.clear();
         state.screens.forEach(value -> screens.add(PreviewScreenSpec.fromSnapshot(value)));
-        selectedScreen = screens.isEmpty() ? -1 : Math.clamp(state.selectedScreen, -1, screens.size() - 1);
+        selectedScreen = screens.isEmpty() ? -1 : MathCompat.clamp(state.selectedScreen, -1, screens.size() - 1);
         if (state.consoleProperties != null && consoleDraft != null) {
             ConsoleProperties value = state.consoleProperties;
             consoleDraft = new ControlConsoleDocument(consoleDraft.schemaVersion(), consoleDraft.consoleId(),

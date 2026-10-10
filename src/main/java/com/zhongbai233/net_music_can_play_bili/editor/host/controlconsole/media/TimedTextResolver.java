@@ -5,6 +5,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 从按游戏 tick 排序的文本轨中解析当前行。 */
 public final class TimedTextResolver {
     private TimedTextResolver() {
@@ -87,7 +89,7 @@ public final class TimedTextResolver {
         long gapMillis = Math.max(1L, (long) (nextKey - currentKey) * 50L);
         long duration = Math.min(500L, Math.max(120L, gapMillis * 2L / 3L));
         float elapsed = Math.max(0.0F, (tick - currentKey) * 50.0F);
-        float raw = Math.clamp(elapsed / duration, 0.0F, 1.0F);
+        float raw = MathCompat.clamp(elapsed / duration, 0.0F, 1.0F);
         return 1.0F - (float) Math.pow(1.0F - raw, 3.0F);
     }
 

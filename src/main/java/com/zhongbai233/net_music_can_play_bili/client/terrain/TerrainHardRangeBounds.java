@@ -2,6 +2,8 @@ package com.zhongbai233.net_music_can_play_bili.client.terrain;
 
 import com.zhongbai233.net_music_can_play_bili.terrain.core.TerrainBounds;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 将中控台中心与半轴 hardRange 转为包含端点、经过世界高度裁剪的方块范围。 */
 public final class TerrainHardRangeBounds {
     private TerrainHardRangeBounds() {
@@ -26,7 +28,7 @@ public final class TerrainHardRangeBounds {
         int minZ = floorClamped(centerZ - halfZ);
         int maxZ = floorClamped(centerZ + halfZ);
         if (maxY < minY) {
-            int clamped = Math.clamp(consoleY, levelMinY, levelMaxY - 1);
+            int clamped = MathCompat.clamp(consoleY, levelMinY, levelMaxY - 1);
             minY = clamped;
             maxY = clamped;
         }

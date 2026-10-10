@@ -19,6 +19,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** Control-console document, inspector widgets, and element-list editing. */
 abstract class HolographicConsoleInspectorScreen extends HolographicEditorLifecycleScreen {
     protected HolographicConsoleInspectorScreen(boolean bindEquippedGlasses, BlockPos controlConsolePos) {
@@ -642,7 +644,7 @@ abstract class HolographicConsoleInspectorScreen extends HolographicEditorLifecy
 
     protected void ensureSelectedConsoleElementVisible(int visibleRows) {
         int maxScroll = Math.max(0, screens.size() - visibleRows);
-        consoleElementScroll = Math.clamp(consoleElementScroll, 0, maxScroll);
+        consoleElementScroll = MathCompat.clamp(consoleElementScroll, 0, maxScroll);
         if (selectedScreen >= 0 && selectedScreen < consoleElementScroll) {
             consoleElementScroll = selectedScreen;
         } else if (selectedScreen >= consoleElementScroll + visibleRows) {

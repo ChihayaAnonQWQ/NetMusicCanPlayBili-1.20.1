@@ -2,6 +2,8 @@ package com.zhongbai233.net_music_can_play_bili.editor.host.controlconsole.media
 
 import com.zhongbai233.net_music_can_play_bili.editor.host.controlconsole.document.ControlConsoleElement;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 中控台字幕的纯布局与颜色策略；实际字形拆行由Minecraft Font完成。 */
 public final class SubtitleLayout {
     public static final float WORLD_TEXT_SCALE = 0.025F;
@@ -13,7 +15,7 @@ public final class SubtitleLayout {
         if (!Float.isFinite(distance)) {
             return 0.56F;
         }
-        float t = Math.clamp(Math.abs(distance) / 2.0F, 0.0F, 1.0F);
+        float t = MathCompat.clamp(Math.abs(distance) / 2.0F, 0.0F, 1.0F);
         float eased = t * t * (3.0F - 2.0F * t);
         return 1.0F - eased * 0.44F;
     }
@@ -56,7 +58,7 @@ public final class SubtitleLayout {
     }
 
     public static int multiplyAlpha(int color, float opacity) {
-        float normalized = Float.isFinite(opacity) ? Math.clamp(opacity, 0.0F, 1.0F) : 0.0F;
+        float normalized = Float.isFinite(opacity) ? MathCompat.clamp(opacity, 0.0F, 1.0F) : 0.0F;
         int alpha = Math.round((color >>> 24) * normalized);
         return color & 0x00FFFFFF | alpha << 24;
     }

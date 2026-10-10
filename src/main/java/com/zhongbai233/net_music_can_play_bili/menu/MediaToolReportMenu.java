@@ -3,7 +3,7 @@ package com.zhongbai233.net_music_can_play_bili.menu;
 import com.zhongbai233.net_music_can_play_bili.init.ModMenus;
 import com.zhongbai233.net_music_can_play_bili.server.PlaybackAuditManager;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,7 +23,7 @@ public class MediaToolReportMenu extends AbstractContainerMenu {
         this(containerId, inventory, List.of());
     }
 
-    public MediaToolReportMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf buffer) {
+    public MediaToolReportMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
         this(containerId, inventory, readSources(buffer));
     }
 
@@ -69,7 +69,7 @@ public class MediaToolReportMenu extends AbstractContainerMenu {
                 source.elapsedMillis(), source.durationSeconds(), ownerName, distance);
     }
 
-    public static void writeClientData(RegistryFriendlyByteBuf buffer, List<ReportSourceInfo> sources) {
+    public static void writeClientData(FriendlyByteBuf buffer, List<ReportSourceInfo> sources) {
         List<ReportSourceInfo> safeSources = sources != null ? sources : List.of();
         int count = Math.min(MAX_SOURCES, safeSources.size());
         buffer.writeVarInt(count);
@@ -78,7 +78,7 @@ public class MediaToolReportMenu extends AbstractContainerMenu {
         }
     }
 
-    private static List<ReportSourceInfo> readSources(RegistryFriendlyByteBuf buffer) {
+    private static List<ReportSourceInfo> readSources(FriendlyByteBuf buffer) {
         if (buffer == null || !buffer.isReadable()) {
             return List.of();
         }
@@ -95,7 +95,7 @@ public class MediaToolReportMenu extends AbstractContainerMenu {
             double distance) {
         private static final int MAX_TEXT_LENGTH = 512;
 
-        private void write(RegistryFriendlyByteBuf buffer) {
+        private void write(FriendlyByteBuf buffer) {
             buffer.writeUtf(safe(key), MAX_TEXT_LENGTH);
             buffer.writeUtf(safe(kindShortName), MAX_TEXT_LENGTH);
             buffer.writeUtf(safe(kindDisplayName), MAX_TEXT_LENGTH);
@@ -109,7 +109,7 @@ public class MediaToolReportMenu extends AbstractContainerMenu {
             buffer.writeDouble(distance);
         }
 
-        private static ReportSourceInfo read(RegistryFriendlyByteBuf buffer) {
+        private static ReportSourceInfo read(FriendlyByteBuf buffer) {
             return new ReportSourceInfo(buffer.readUtf(MAX_TEXT_LENGTH), buffer.readUtf(MAX_TEXT_LENGTH),
                     buffer.readUtf(MAX_TEXT_LENGTH), buffer.readUtf(MAX_TEXT_LENGTH), buffer.readBlockPos(),
                     buffer.readUtf(MAX_TEXT_LENGTH), buffer.readUtf(MAX_TEXT_LENGTH), buffer.readVarLong(),

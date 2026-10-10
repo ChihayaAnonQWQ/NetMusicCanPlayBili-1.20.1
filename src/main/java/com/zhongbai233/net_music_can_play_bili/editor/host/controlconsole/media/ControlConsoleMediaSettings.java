@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.editor.host.controlconsole.media;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 中控台屏幕画质档位与 7.1.4 音响声道的稳定持久化映射。 */
 public final class ControlConsoleMediaSettings {
     private static final int[] VIDEO_QUALITIES = { 116, 112, 80, 64, 32, 16, 120, 127 };
@@ -14,7 +17,7 @@ public final class ControlConsoleMediaSettings {
     }
 
     public static int normalizeVideoQualityIndex(int index) {
-        return Math.clamp(index, 0, VIDEO_QUALITIES.length - 1);
+        return MathCompat.clamp(index, 0, VIDEO_QUALITIES.length - 1);
     }
 
     public static int videoQualityCeiling(int index) {
@@ -30,7 +33,7 @@ public final class ControlConsoleMediaSettings {
     }
 
     public static int normalizeAudioChannel(int channel) {
-        return Math.clamp(channel, -1, AUDIO_CHANNEL_LABELS.length - 1);
+        return MathCompat.clamp(channel, -1, AUDIO_CHANNEL_LABELS.length - 1);
     }
 
     public static String audioChannelLabel(int channel) {

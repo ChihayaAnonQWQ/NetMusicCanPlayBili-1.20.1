@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 中控台无 Screen 漫游会话。代理相机仅存在于客户端，不改变玩家服务端状态。 */
 public final class ControlConsoleRoamingSession {
     private static final float DEFAULT_FLYING_SPEED = 0.05F;
@@ -188,7 +190,7 @@ public final class ControlConsoleRoamingSession {
             return;
         }
         session.scrollAccumulator -= scrollSteps;
-        session.flyingSpeed = Math.clamp(session.flyingSpeed + scrollSteps * FLYING_SPEED_STEP,
+        session.flyingSpeed = MathCompat.clamp(session.flyingSpeed + scrollSteps * FLYING_SPEED_STEP,
                 0.0F, MAX_FLYING_SPEED);
     }
 

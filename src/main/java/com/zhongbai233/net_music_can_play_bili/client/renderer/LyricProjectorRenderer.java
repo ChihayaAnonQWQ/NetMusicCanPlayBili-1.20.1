@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * 歌词投影仪渲染器
  */
@@ -310,7 +312,7 @@ public class LyricProjectorRenderer
             float effectiveDist = (i - centerIdx) + (1.0F - progress);
             float absDist = Math.abs(effectiveDist);
 
-            float t = Math.clamp(absDist / 2.0f, 0.0f, 1.0f);
+            float t = MathCompat.clamp(absDist / 2.0f, 0.0f, 1.0f);
             float eased = t * t * (3.0f - 2.0f * t);
 
             float sizeScale = 1.0f - eased * (1.0f - 0.56f);
@@ -433,7 +435,7 @@ public class LyricProjectorRenderer
         if (durationMillis <= 0L || elapsedMillis >= durationMillis) {
             return 1.0F;
         }
-        float raw = Math.clamp((float) elapsedMillis / durationMillis, 0.0F, 1.0F);
+        float raw = MathCompat.clamp((float) elapsedMillis / durationMillis, 0.0F, 1.0F);
         return 1.0F - (float) Math.pow(1.0F - raw, 3.0F);
     }
 
@@ -472,7 +474,7 @@ public class LyricProjectorRenderer
         float alpha = interpolationAlpha(elapsedNanos);
         float interpolated = state.displayProgress + delta * alpha;
         float minProgress = Math.max(state.displayProgress, targetProgress - SCROLL_MAX_INTERPOLATION_LAG);
-        state.displayProgress = Math.clamp(Math.max(interpolated, minProgress), 0.0F, targetProgress);
+        state.displayProgress = MathCompat.clamp(Math.max(interpolated, minProgress), 0.0F, targetProgress);
         return state.displayProgress;
     }
 
@@ -482,7 +484,7 @@ public class LyricProjectorRenderer
         }
         double halfLifeMillis = SCROLL_PROPERTIES.interpolationHalfLifeMillis();
         double elapsedMillis = elapsedNanos / 1_000_000.0D;
-        return (float) Math.clamp(1.0D - Math.pow(0.5D, elapsedMillis / halfLifeMillis), 0.0D, 1.0D);
+        return (float) MathCompat.clamp(1.0D - Math.pow(0.5D, elapsedMillis / halfLifeMillis), 0.0D, 1.0D);
     }
 
     private static long adaptiveScrollDurationMillis(int currentTick, int nextTick) {

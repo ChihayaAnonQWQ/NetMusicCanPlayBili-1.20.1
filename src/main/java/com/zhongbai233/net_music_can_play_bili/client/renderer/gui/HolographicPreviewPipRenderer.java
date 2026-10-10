@@ -30,6 +30,8 @@ import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * 全息编辑器的 3D 场景预览渲染器(26.x 的 GUI 图集 PIP 在 1.21.1 无等价物)。
  *
@@ -366,8 +368,8 @@ public final class HolographicPreviewPipRenderer
                     + Math.pow((segment.z1() + segment.z2()) * 0.5D - frame.coreCenterZ(), 2.0D));
                 boolean mapColored = segment.color() != 0;
                 int alpha = mapColored
-                        ? (int) Math.clamp(0xD8 - centerDistance * 0.5D, 0x90, 0xD8)
-                        : (int) Math.clamp(0x64 - centerDistance * 0.35D, 0x30, 0x64);
+                        ? (int) MathCompat.clamp(0xD8 - centerDistance * 0.5D, 0x90, 0xD8)
+                        : (int) MathCompat.clamp(0x64 - centerDistance * 0.35D, 0x30, 0x64);
                 int color = mapColored ? alpha << 24 | segment.color() & 0x00FFFFFF
                         : unknown ? 0x384B3F66 : alpha << 24 | 0x006FCB78;
                 line(pose,
@@ -401,9 +403,9 @@ public final class HolographicPreviewPipRenderer
             float dx = direction == 0 ? -length : direction == 1 ? length : 0.0F;
             float dy = direction == 2 ? -length : direction == 3 ? length : 0.0F;
             float dz = direction == 4 ? -length : direction == 5 ? length : 0.0F;
-            float endX = Math.clamp(startX + dx, frame.bounds().minX(), frame.bounds().maxX() + 1.0F);
-            float endY = Math.clamp(startY + dy, frame.bounds().minY(), frame.bounds().maxY() + 1.0F);
-            float endZ = Math.clamp(startZ + dz, frame.bounds().minZ(), frame.bounds().maxZ() + 1.0F);
+            float endX = MathCompat.clamp(startX + dx, frame.bounds().minX(), frame.bounds().maxX() + 1.0F);
+            float endY = MathCompat.clamp(startY + dy, frame.bounds().minY(), frame.bounds().maxY() + 1.0F);
+            float endZ = MathCompat.clamp(startZ + dz, frame.bounds().minZ(), frame.bounds().maxZ() + 1.0F);
             float localStartX = startX - frame.originX() - 0.5F;
             float localStartY = startY - frame.originY();
             float localStartZ = startZ - frame.originZ() - 0.5F;
@@ -886,7 +888,7 @@ public final class HolographicPreviewPipRenderer
 
     private void line(PoseStack.Pose pose, float x1, float y1, float z1, float x2,
             float y2, float z2, int color, float lineWidth) {
-        float visibleWidth = Math.clamp(lineWidth * ACTIVE_LINE_WIDTH_SCALE.get(), 1.0F, 8.0F);
+        float visibleWidth = MathCompat.clamp(lineWidth * ACTIVE_LINE_WIDTH_SCALE.get(), 1.0F, 8.0F);
         float dx = x2 - x1;
         float dy = y2 - y1;
         float dz = z2 - z1;

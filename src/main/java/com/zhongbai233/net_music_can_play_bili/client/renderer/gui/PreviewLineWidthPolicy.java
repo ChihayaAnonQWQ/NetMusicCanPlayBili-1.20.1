@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.client.renderer.gui;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 中控台建模预览的屏幕可见线宽策略。 */
 final class PreviewLineWidthPolicy {
     private static final float BASE_SCALE = 1.30F;
@@ -29,6 +32,6 @@ final class PreviewLineWidthPolicy {
     }
 
     private static float clamp(float value) {
-        return Math.clamp(value, BASE_SCALE, MAX_SCALE);
+        return MathCompat.clamp(value, BASE_SCALE, MAX_SCALE);
     }
 }

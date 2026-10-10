@@ -21,6 +21,8 @@ import static com.zhongbai233.net_music_can_play_bili.link.LinkHelper.getIntOr;
 import static com.zhongbai233.net_music_can_play_bili.link.LinkHelper.getLongOr;
 import static com.zhongbai233.net_music_can_play_bili.link.LinkHelper.getStringOr;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * 音响方块实体 — 将唱片机音频重定向到本方块位置输出，支持 7.1.4 声道选择
  */
@@ -105,7 +107,7 @@ public class SpeakerBlockEntity extends SyncedBlockEntity {
     }
 
     public void setVolume(float v) {
-        this.volume = Math.clamp(v, 0.0f, 2.0f);
+        this.volume = MathCompat.clamp(v, 0.0f, 2.0f);
         endpointRevision++;
         syncServerEndpoint();
         setChanged();

@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.client.renderer.video;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * Constant-cost video prewarm predictor based on the future camera pose and the real screen AABB.
  * Unlike audio range prediction, being inside a sphere is not sufficient: movement or view rotation
@@ -36,8 +39,8 @@ final class VideoVisibilityTrendPredictor {
 
         double yawDelta = wrapDegrees(yaw - previousYaw);
         double pitchDelta = pitch - previousPitch;
-        double futureYaw = yaw + Math.clamp(yawDelta, -12.0D, 12.0D) * ROTATION_LEAD_TICKS;
-        double futurePitch = Math.clamp(pitch + Math.clamp(pitchDelta, -8.0D, 8.0D)
+        double futureYaw = yaw + MathCompat.clamp(yawDelta, -12.0D, 12.0D) * ROTATION_LEAD_TICKS;
+        double futurePitch = MathCompat.clamp(pitch + MathCompat.clamp(pitchDelta, -8.0D, 8.0D)
                 * ROTATION_LEAD_TICKS, -89.0D, 89.0D);
 
         double currentDistance = distanceToAabb(cameraX, cameraY, cameraZ,
@@ -68,9 +71,9 @@ final class VideoVisibilityTrendPredictor {
 
     private static double dotToNearestPoint(double x, double y, double z, double[] forward,
             double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        double targetX = Math.clamp(x, minX, maxX);
-        double targetY = Math.clamp(y, minY, maxY);
-        double targetZ = Math.clamp(z, minZ, maxZ);
+        double targetX = MathCompat.clamp(x, minX, maxX);
+        double targetY = MathCompat.clamp(y, minY, maxY);
+        double targetZ = MathCompat.clamp(z, minZ, maxZ);
         if (targetX == x && targetY == y && targetZ == z) {
             targetX = (minX + maxX) * 0.5D;
             targetY = (minY + maxY) * 0.5D;

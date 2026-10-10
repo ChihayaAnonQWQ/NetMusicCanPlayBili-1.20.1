@@ -2,6 +2,8 @@ package com.zhongbai233.net_music_can_play_bili.client;
 
 import com.zhongbai233.net_music_can_play_bili.util.NcpbSystemProperties;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** JVM property boundary for advanced video features, benchmarks, and decoder overrides. */
 public final class VideoFeatureProperties {
     static final String ADVANCED_FEATURES = "ncpb.video.advanced_features";
@@ -73,8 +75,8 @@ public final class VideoFeatureProperties {
     public record RealMediaLifecycle(boolean enabled, int rounds, int cycleTimeoutTicks,
             String videoId, int quality) {
         public RealMediaLifecycle {
-            rounds = Math.clamp(rounds, 1, 10_000);
-            cycleTimeoutTicks = Math.clamp(cycleTimeoutTicks, 100, 72_000);
+            rounds = MathCompat.clamp(rounds, 1, 10_000);
+            cycleTimeoutTicks = MathCompat.clamp(cycleTimeoutTicks, 100, 72_000);
             videoId = videoId != null && !videoId.isBlank() ? videoId.trim() : "BV1GJ411x7h7";
             quality = Math.max(1, quality);
         }

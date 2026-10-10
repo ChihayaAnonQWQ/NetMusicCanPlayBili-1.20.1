@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.media.audio;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** Bidirectional, continuously retargetable smoothstep fade for acoustic boundaries. */
 public final class AreaAudioBoundaryEnvelope {
     public static final long DEFAULT_FADE_IN_NANOS = 650_000_000L;
@@ -46,7 +49,7 @@ public final class AreaAudioBoundaryEnvelope {
             return targetGain;
         }
         long duration = targetGain > startGain ? fadeInNanos : fadeOutNanos;
-        float progress = Math.clamp((float) Math.max(0L, nowNanos - transitionStartedNanos) / duration,
+        float progress = MathCompat.clamp((float) Math.max(0L, nowNanos - transitionStartedNanos) / duration,
                 0.0F, 1.0F);
         float smooth = progress * progress * (3.0F - 2.0F * progress);
         return startGain + (targetGain - startGain) * smooth;

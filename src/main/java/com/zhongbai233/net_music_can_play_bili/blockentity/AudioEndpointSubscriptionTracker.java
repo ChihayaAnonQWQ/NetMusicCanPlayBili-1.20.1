@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** Per-player, per-source spatial subscriptions with revision-based endpoint deltas. */
 final class AudioEndpointSubscriptionTracker {
     static final int CELL_SIZE_BLOCKS = 32;
@@ -190,9 +192,9 @@ final class AudioEndpointSubscriptionTracker {
             double maxX = minX + CELL_SIZE_BLOCKS;
             double maxY = minY + CELL_SIZE_BLOCKS;
             double maxZ = minZ + CELL_SIZE_BLOCKS;
-            double closestX = Math.clamp(pointX, minX, maxX);
-            double closestY = Math.clamp(pointY, minY, maxY);
-            double closestZ = Math.clamp(pointZ, minZ, maxZ);
+            double closestX = MathCompat.clamp(pointX, minX, maxX);
+            double closestY = MathCompat.clamp(pointY, minY, maxY);
+            double closestZ = MathCompat.clamp(pointZ, minZ, maxZ);
             return distanceSquared(pointX, pointY, pointZ, closestX, closestY, closestZ) <= radius * radius;
         }
     }

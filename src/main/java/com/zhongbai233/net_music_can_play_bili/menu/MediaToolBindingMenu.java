@@ -10,7 +10,7 @@ import com.zhongbai233.net_music_can_play_bili.link.MediaBindingData.MediaSource
 import com.zhongbai233.net_music_can_play_bili.network.MP4DeviceIdentity;
 import com.zhongbai233.net_music_can_play_bili.server.MediaBindingCleanupService;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -46,7 +46,7 @@ public class MediaToolBindingMenu extends AbstractContainerMenu {
         this(containerId, inventory, TargetKind.MP4, null, null);
     }
 
-    public MediaToolBindingMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf buffer) {
+    public MediaToolBindingMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
         this(containerId, inventory, readTargetKind(buffer), readTargetPos(buffer), readMp4DeviceId(buffer));
     }
 
@@ -109,7 +109,7 @@ public class MediaToolBindingMenu extends AbstractContainerMenu {
         return (targetKind == TargetKind.MP4 || targetKind == TargetKind.PAD) && mediaDeviceId == null;
     }
 
-    public static void writeClientData(RegistryFriendlyByteBuf buffer, TargetKind targetKind, BlockPos targetPos,
+    public static void writeClientData(FriendlyByteBuf buffer, TargetKind targetKind, BlockPos targetPos,
             UUID mp4DeviceId) {
         TargetKind safeKind = targetKind != null ? targetKind : TargetKind.MP4;
         buffer.writeEnum(safeKind);
@@ -293,19 +293,19 @@ public class MediaToolBindingMenu extends AbstractContainerMenu {
         return targetKind == TargetKind.PAD ? stack.getItem() instanceof PadItem : stack.getItem() instanceof MP4Item;
     }
 
-    private static TargetKind readTargetKind(RegistryFriendlyByteBuf buffer) {
+    private static TargetKind readTargetKind(FriendlyByteBuf buffer) {
         return buffer != null && buffer.isReadable()
                 ? buffer.readEnum(TargetKind.class)
                 : TargetKind.MP4;
     }
 
-    private static BlockPos readTargetPos(RegistryFriendlyByteBuf buffer) {
+    private static BlockPos readTargetPos(FriendlyByteBuf buffer) {
         return buffer != null && buffer.isReadable() && buffer.readBoolean()
                 ? buffer.readBlockPos()
                 : null;
     }
 
-    private static UUID readMp4DeviceId(RegistryFriendlyByteBuf buffer) {
+    private static UUID readMp4DeviceId(FriendlyByteBuf buffer) {
         return buffer != null && buffer.isReadable() && buffer.readBoolean()
                 ? buffer.readUUID()
                 : null;

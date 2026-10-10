@@ -32,6 +32,8 @@ import net.minecraftforge.client.event.RenderFrameEvent;
 import net.minecraftforge.common.NeoForge;
 import org.slf4j.Logger;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 public final class ModernTurntableClientEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -48,22 +50,22 @@ public final class ModernTurntableClientEvents {
         modEventBus.addListener(ModernTurntableClientEvents::registerMenuScreens);
         modEventBus.addListener(HolographicGlassesKeyHandler::register);
         modEventBus.addListener(YuvVideoRenderTypes::registerPipelines);
-        NeoForge.EVENT_BUS.addListener(ModernTurntableClientEvents::onClientLogout);
-        NeoForge.EVENT_BUS.addListener(ModernTurntableClientEvents::onRenderFrame);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onClientTick);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onMovementInput);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onMouseButton);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onInteraction);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onMouseScroll);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onRenderGui);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onSubmitGeometry);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onLogout);
-        NeoForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onClone);
+        MinecraftForge.EVENT_BUS.addListener(ModernTurntableClientEvents::onClientLogout);
+        MinecraftForge.EVENT_BUS.addListener(ModernTurntableClientEvents::onRenderFrame);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onClientTick);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onMovementInput);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onMouseButton);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onInteraction);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onMouseScroll);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onRenderGui);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onSubmitGeometry);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onLogout);
+        MinecraftForge.EVENT_BUS.addListener(ControlConsoleRoamingEvents::onClone);
     }
 
     private static void onRenderFrame(RenderFrameEvent.Pre event) {
         if (Minecraft.getInstance().screen instanceof HolographicScreenConfigTestScreen screen) {
-            double deltaSeconds = Math.clamp(event.getPartialTick().getRealtimeDeltaTicks() / 20.0D,
+            double deltaSeconds = MathCompat.clamp(event.getPartialTick().getRealtimeDeltaTicks() / 20.0D,
                     0.0D, 0.1D);
             screen.advanceCameraFrame(deltaSeconds);
         }

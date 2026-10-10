@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.terrain.core;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** 固定地形实景核心：球内实景，边缘稳定抖动，球外只保留线框。 */
 public final class TerrainFixedCorePolicy {
     public static final double RADIUS = 12.5D;
@@ -54,11 +57,11 @@ public final class TerrainFixedCorePolicy {
 
         public static boolean sectionMayContainDetail(double centerX, double centerY, double centerZ,
             int minBlockX, int minBlockY, int minBlockZ) {
-        double nearestX = Math.clamp(centerX, minBlockX + 0.5D,
+        double nearestX = MathCompat.clamp(centerX, minBlockX + 0.5D,
             minBlockX + TerrainSectionKey.SIZE - 0.5D);
-        double nearestY = Math.clamp(centerY, minBlockY + 0.5D,
+        double nearestY = MathCompat.clamp(centerY, minBlockY + 0.5D,
             minBlockY + TerrainSectionKey.SIZE - 0.5D);
-        double nearestZ = Math.clamp(centerZ, minBlockZ + 0.5D,
+        double nearestZ = MathCompat.clamp(centerZ, minBlockZ + 0.5D,
             minBlockZ + TerrainSectionKey.SIZE - 0.5D);
         double dx = nearestX - centerX;
         double dy = nearestY - centerY;

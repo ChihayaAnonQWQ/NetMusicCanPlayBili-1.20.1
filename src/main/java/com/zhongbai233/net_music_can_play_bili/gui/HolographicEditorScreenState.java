@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * 全息眼镜屏幕配置界面。
  */
@@ -467,7 +469,7 @@ abstract class HolographicEditorScreenState extends Screen {
 
     protected final class ElementVolumeSlider extends AbstractSliderButton {
         protected ElementVolumeSlider(int x, int y, int width, int height, float volume) {
-            super(x, y, width, height, Component.empty(), Math.clamp(volume, 0.0F, 1.0F));
+            super(x, y, width, height, Component.empty(), MathCompat.clamp(volume, 0.0F, 1.0F));
             updateMessage();
         }
 
@@ -484,7 +486,7 @@ abstract class HolographicEditorScreenState extends Screen {
         @Override
         public void onRelease(double mouseX, double mouseY) {
             super.onRelease(mouseX, mouseY);
-            float volume = (float) Math.clamp(value, 0.0D, 1.0D);
+            float volume = (float) MathCompat.clamp(value, 0.0D, 1.0D);
             editSelected("设置音源音量", item -> item.volume = volume);
         }
     }
@@ -492,7 +494,7 @@ abstract class HolographicEditorScreenState extends Screen {
     protected final class ElementBrightnessSlider extends AbstractSliderButton {
         protected ElementBrightnessSlider(int x, int y, int width, int height, float brightness) {
             super(x, y, width, height, Component.empty(),
-                    Math.clamp(brightness, ControlConsoleElement.MIN_BRIGHTNESS,
+                    MathCompat.clamp(brightness, ControlConsoleElement.MIN_BRIGHTNESS,
                             ControlConsoleElement.MAX_BRIGHTNESS));
             updateMessage();
         }
@@ -510,7 +512,7 @@ abstract class HolographicEditorScreenState extends Screen {
         @Override
         public void onRelease(double mouseX, double mouseY) {
             super.onRelease(mouseX, mouseY);
-            float brightness = (float) Math.clamp(value, 0.0D, 1.0D);
+            float brightness = (float) MathCompat.clamp(value, 0.0D, 1.0D);
             editSelected("设置屏幕亮度", item -> item.brightness = brightness);
         }
     }

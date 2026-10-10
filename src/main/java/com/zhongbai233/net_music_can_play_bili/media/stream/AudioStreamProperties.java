@@ -2,6 +2,8 @@ package com.zhongbai233.net_music_can_play_bili.media.stream;
 
 import com.zhongbai233.net_music_can_play_bili.util.NcpbSystemProperties;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /** JVM property boundary for HTTP audio, Dolby queues, live video samples, and stream recovery. */
 public final class AudioStreamProperties {
     static final String FORMAT_WAIT_SECONDS = "ncpb.bili.media.format_wait_seconds";
@@ -69,7 +71,7 @@ public final class AudioStreamProperties {
             long rangeRaceTimeoutMillis, int segmentBaseCacheMaxEntries) {
         public Http {
             formatWaitSeconds = Math.max(15, formatWaitSeconds);
-            rangeRaceMaxCandidates = Math.clamp(rangeRaceMaxCandidates, 1, 8);
+            rangeRaceMaxCandidates = MathCompat.clamp(rangeRaceMaxCandidates, 1, 8);
             rangeRaceTimeoutMillis = Math.max(250L, rangeRaceTimeoutMillis);
             segmentBaseCacheMaxEntries = Math.max(1, segmentBaseCacheMaxEntries);
         }

@@ -8,6 +8,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * Shared daemon executor for user-triggered blocking media metadata/preview I/O.
  *
@@ -16,7 +18,7 @@ import java.util.function.Supplier;
  */
 public final class MediaIoExecutor {
     private static final int CORE_THREADS = 2;
-    private static final int MAX_THREADS = Math.clamp(Runtime.getRuntime().availableProcessors() / 2, 2, 4);
+    private static final int MAX_THREADS = MathCompat.clamp(Runtime.getRuntime().availableProcessors() / 2, 2, 4);
     private static final int QUEUE_CAPACITY = 64;
     private static final ThreadPoolExecutor EXECUTOR = new ThreadPoolExecutor(
             CORE_THREADS, MAX_THREADS, 30L, TimeUnit.SECONDS,

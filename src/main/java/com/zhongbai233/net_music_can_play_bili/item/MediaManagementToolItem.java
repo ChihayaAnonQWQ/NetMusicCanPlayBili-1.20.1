@@ -144,7 +144,7 @@ public class MediaManagementToolItem extends Item {
 
         @Override
         public void writeClientSideData(net.minecraft.world.inventory.AbstractContainerMenu menu,
-                net.minecraft.network.RegistryFriendlyByteBuf buffer) {
+                net.minecraft.network.FriendlyByteBuf buffer) {
             MediaToolBindingMenu.writeClientData(buffer, targetKind, targetPos, mp4DeviceId);
         }
     }
@@ -164,7 +164,7 @@ public class MediaManagementToolItem extends Item {
 
         @Override
         public void writeClientSideData(net.minecraft.world.inventory.AbstractContainerMenu menu,
-                net.minecraft.network.RegistryFriendlyByteBuf buffer) {
+                net.minecraft.network.FriendlyByteBuf buffer) {
             MediaToolReportMenu.writeClientData(buffer, sources);
         }
     }
@@ -215,7 +215,7 @@ public class MediaManagementToolItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents,
+    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents,
             TooltipFlag flag) {
         tooltipComponents.add(Component.translatable("tooltip.net_music_can_play_bili.media_tool.binding")
                 .withStyle(ChatFormatting.GRAY));

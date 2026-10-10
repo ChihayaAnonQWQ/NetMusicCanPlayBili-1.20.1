@@ -1,5 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.media.sync;
 
+
+import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
+
 /**
  * Constant-cost movement trend predictor. It projects one bounded movement segment and never
  * scans blocks, chunks, or paths.
@@ -29,7 +32,7 @@ public final class PlaybackApproachPredictor {
             return false;
         }
         double lengthSquared = segment.lengthSquared();
-        double t = Math.clamp((dx * segment.x() + dy * segment.y() + dz * segment.z()) / lengthSquared,
+        double t = MathCompat.clamp((dx * segment.x() + dy * segment.y() + dz * segment.z()) / lengthSquared,
                 0.0D, 1.0D);
         double closestX = x + segment.x() * t;
         double closestY = y + segment.y() * t;

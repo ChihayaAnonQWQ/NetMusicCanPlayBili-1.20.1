@@ -22,9 +22,9 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.common.NeoForge;
-import net.minecraftforge.capabilities.Capabilities;
-import net.minecraftforge.capabilities.RegisterCapabilitiesEvent;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
@@ -42,17 +42,17 @@ public class NetMusicCanPlayBili {
         ModItems.TABS.register(modEventBus);
         ModMenus.MENU_TYPES.register(modEventBus);
         modEventBus.addListener(ModernTurntableNetwork::register);
-        modEventBus.addListener(RegisterCapabilitiesEvent.class, this::registerCapabilities);
-        NeoForge.EVENT_BUS.addListener(NetMusicPermissions::onPermissionGather);
-        NeoForge.EVENT_BUS.addListener(NetMusicBiliServerCommands::onRegisterCommands);
-        NeoForge.EVENT_BUS.addListener(PadMapScopeSync::onPlayerLoggedIn);
-        NeoForge.EVENT_BUS.addListener(AreaAudioListenerSync::onPlayerLoggedIn);
-        NeoForge.EVENT_BUS.addListener(AreaAudioListenerSync::onPlayerLoggedOut);
-        NeoForge.EVENT_BUS.addListener(AreaAudioListenerSync::onServerTick);
-        NeoForge.EVENT_BUS.addListener(AreaAudioListenerSync::onServerStopping);
+        modEventBus.addListener(this::registerCapabilities);
+        MinecraftForge.EVENT_BUS.addListener(NetMusicPermissions::onPermissionGather);
+        MinecraftForge.EVENT_BUS.addListener(NetMusicBiliServerCommands::onRegisterCommands);
+        MinecraftForge.EVENT_BUS.addListener(PadMapScopeSync::onPlayerLoggedIn);
+        MinecraftForge.EVENT_BUS.addListener(AreaAudioListenerSync::onPlayerLoggedIn);
+        MinecraftForge.EVENT_BUS.addListener(AreaAudioListenerSync::onPlayerLoggedOut);
+        MinecraftForge.EVENT_BUS.addListener(AreaAudioListenerSync::onServerTick);
+        MinecraftForge.EVENT_BUS.addListener(AreaAudioListenerSync::onServerStopping);
         registerDevelopmentSelfTests();
-        NeoForge.EVENT_BUS.addListener(PlaybackAuditManager::onServerTick);
-        NeoForge.EVENT_BUS.addListener(PlaybackAuditManager::onPlayerLoggedIn);
+        MinecraftForge.EVENT_BUS.addListener(PlaybackAuditManager::onServerTick);
+        MinecraftForge.EVENT_BUS.addListener(PlaybackAuditManager::onPlayerLoggedIn);
 
         modEventBus.addListener(Config::onConfigChanged);
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -73,11 +73,19 @@ public class NetMusicCanPlayBili {
         }
     }
 
+    /**
+     * 1.20.1 的能力注册与 1.21.1 不同：
+     * <ul>
+     *   <li>NeoForge 用 {@code event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, type, provider)}
+     *       一次性把能力挂到「方块实体类型」上；Forge 1.20.1 的 {@link RegisterCapabilitiesEvent}
+     *       只有 {@code register(Class)}，它只负责<b>声明</b>某个能力接口会被注册。</li>
+     *   <li>真正把能力暴露出去是在方块实体里覆写
+     *       {@code BlockEntity#getCapability(Capability, Direction)} —— 见
+     *       {@code ModernTurntableBlockEntity#getCapability}。</li>
+     * </ul>
+     */
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(
-                Capabilities.ItemHandler.BLOCK,
-                ModBlockEntities.MODERN_TURNTABLE.get(),
-                (turntable, side) -> turntable.getItemHandler());
+        event.register(IItemHandler.class);
     }
 
     private static void registerDevelopmentSelfTests() {
@@ -98,7 +106,7 @@ public class NetMusicCanPlayBili {
             Class<?> selfTest = Class.forName(className);
             var handler = selfTest.getMethod("onServerStarted",
                     net.minecraftforge.event.server.ServerStartedEvent.class);
-            NeoForge.EVENT_BUS.addListener(net.minecraftforge.event.server.ServerStartedEvent.class,
+            MinecraftForge.EVENT_BUS.addListener(net.minecraftforge.event.server.ServerStartedEvent.class,
                     event -> invokeDevelopmentSelfTest(handler, event));
         } catch (ReflectiveOperationException ex) {
             throw new IllegalStateException("Unable to register " + description, ex);
