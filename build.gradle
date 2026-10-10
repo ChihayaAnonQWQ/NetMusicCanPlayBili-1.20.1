@@ -153,7 +153,15 @@ tasks.withType(JavaCompile).configureEach {
     // 增量编译时能生成，但 clean build（目录刚被删、由 Gradle 稍后才创建）时
     // 处理器写文件会失败且**静默**——表现为"编译成功、jar 里却没有 refmap"。
     options.compilerArgs += [
-            '-AoutRefMapFile=' + file("${buildDir}/generated/sources/annotationProcessor/java/main/mixin.refmap.json").absolutePath,
+            // ★ refmap 文件名必须**模组专属**，不能叫 mixin.refmap.json ★
+            // Mixin 是按「类路径资源名」读取 refmap 的（配置里的 "refmap" 字段就是资源名），
+            // 一旦有别的模组也用同一个通用名，谁先被类加载器读到谁生效——实测：
+            // 整合包装了 tectonic-forge-1.19.3-2.3.5a.jar，它也提供 mixin.refmap.json，
+            // 结果我们的配置读到 Tectonic 的 refmap，映射全失效 →
+            //   InvalidAccessorException: No candidates were found matching children:Ljava/util/List;
+            //   in net/minecraft/client/gui/screens/Screen（@Accessor("children") 找不到 f_96540_）
+            // → 客户端启动崩溃。改成 <modid>.refmap.json 后不再可能撞名。
+            '-AoutRefMapFile=' + file("${buildDir}/generated/sources/annotationProcessor/java/main/net_music_can_play_bili.refmap.json").absolutePath,
             '-AdefaultObfuscationEnv=searge',
             '-AmappingTypes=tsrg',
             '-AreobfTsrgFile=' + mixinTsrg.absolutePath
@@ -216,10 +224,11 @@ jar {
     // 理由：Forge 1.20.1 生产运行时是 SRG 名，注入/访问 MC 类成员的 mixin 全靠 refmap；
     // 缺了它**编译依然成功**，只是实机上 mixin 失效或崩溃——这种「静默失败」必须挡住。
     doFirst {
+        // ★ 文件名必须是模组专属（见 compilerArgs 处的说明：通用名会与其它模组撞车）★
         def candidates = [
-                file("${buildDir}/generated/sources/annotationProcessor/java/main/mixin.refmap.json"),
-                file("${buildDir}/tmp/compileJava/mixin.refmap.json"),
-                file("${buildDir}/classes/java/main/mixin.refmap.json")
+                file("${buildDir}/generated/sources/annotationProcessor/java/main/net_music_can_play_bili.refmap.json"),
+                file("${buildDir}/tmp/compileJava/net_music_can_play_bili.refmap.json"),
+                file("${buildDir}/classes/java/main/net_music_can_play_bili.refmap.json")
         ]
         if (!candidates.any { it.exists() }) {
             throw new GradleException(

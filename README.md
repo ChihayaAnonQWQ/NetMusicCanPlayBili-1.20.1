@@ -113,7 +113,13 @@
    该处理器在缺少 `-AoutRefMapFile` 时**一个字节都不写**（`ReferenceManager.write()` 开头即判空返回）。
    还需要 `-AdefaultObfuscationEnv=searge`、`-AmappingTypes=tsrg`、`-AreobfTsrgFile=<tsrg>`，
    并让 `compileJava` 依赖 `createMcpToSrg` 任务；
-2. **refmap 输出目录要放在 Gradle 保证存在的路径**。放到 `build/tmp/compileJava/` 时
+2. **refmap 文件名必须是模组专属的**（不能叫 `mixin.refmap.json` 这类通用名）。
+   Mixin 是按**类路径资源名**读取 refmap 的，整合包里只要有另一个模组用了同名文件，
+   谁先被类加载器读到谁生效——本移植实测在装了 `tectonic-forge` 的整合包里因此**启动崩溃**
+   （`InvalidAccessorException: No candidates were found matching children:Ljava/util/List;`，
+   因为映射整体失效，`@Accessor("children")` 找不到 `f_96540_`）。现已改为
+   `net_music_can_play_bili.refmap.json`；
+3. **refmap 输出目录要放在 Gradle 保证存在的路径**。放到 `build/tmp/compileJava/` 时
    增量编译能生成、**`clean build` 会静默失败**——表现为「编译成功、jar 里却没有 refmap」。
    本移植改到 `build/generated/sources/annotationProcessor/java/main/`，
    并给 `jar` 任务加了**缺 refmap 即终止构建**的守卫；
@@ -306,7 +312,13 @@ Under `options.release = 17` these are unavailable and were replaced: `Math.clam
    writes **not a single byte** unless `-AoutRefMapFile` is present (its `ReferenceManager.write()`
    returns immediately). You also need `-AdefaultObfuscationEnv=searge`, `-AmappingTypes=tsrg`,
    `-AreobfTsrgFile=<tsrg>`, and `compileJava` must depend on the `createMcpToSrg` task;
-2. **The refmap output directory must be one Gradle guarantees to exist.** Writing to
+2. **The refmap file name must be mod-specific** (never a generic name such as `mixin.refmap.json`).
+   Mixin loads refmaps **by classpath resource name**, so if any other mod in a pack ships a file with the
+   same name, whichever the classloader finds first wins — in this port that caused a **startup crash** in a
+   pack containing `tectonic-forge` (`InvalidAccessorException: No candidates were found matching
+   children:Ljava/util/List;`, because the whole mapping was lost and `@Accessor("children")` could not find
+   `f_96540_`). It is now named `net_music_can_play_bili.refmap.json`;
+3. **The refmap output directory must be one Gradle guarantees to exist.** Writing to
    `build/tmp/compileJava/` works for incremental builds but **silently fails on `clean build`** —
    producing a successful build with **no refmap in the jar**. This port writes to
    `build/generated/sources/annotationProcessor/java/main/` and added a `jar`-task guard that
