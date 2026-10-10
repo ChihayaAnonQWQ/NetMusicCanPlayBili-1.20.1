@@ -77,14 +77,14 @@ public abstract class BlackGoldScreen extends Screen {
 
     /** 26.x extractBackground → 1.21.1 renderBackground：黑金全屏背景 pass。 */
     @Override
-    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
+    public void renderBackground(GuiGraphics g) {
         BlackGoldUi.drawBackground(g, width, height);
     }
 
     /** 26.x extractRenderState → 1.21.1 render：保持“背景 → 面板内容 → 控件 → overlay”的绘制次序。 */
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        this.renderBackground(g, mx, my, pt);
+        this.renderBackground(g);
         int bx = boxX(), by = boxY();
         List<BreakoutImpact> impacts = collectSliderBreakoutImpacts(bx, by);
         drawBox(g, bx, by);

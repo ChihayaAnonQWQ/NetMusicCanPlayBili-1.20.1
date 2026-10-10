@@ -1,7 +1,6 @@
 package com.zhongbai233.net_music_can_play_bili.block;
 
 import com.github.tartaricacid.netmusic.item.ItemMusicCD;
-import com.mojang.serialization.MapCodec;
 import com.zhongbai233.net_music_can_play_bili.blockentity.ModernTurntableBlockEntity;
 import com.zhongbai233.net_music_can_play_bili.client.ModernTurntableClientHooks;
 import com.zhongbai233.net_music_can_play_bili.init.ModBlockEntities;
@@ -41,7 +40,6 @@ public class ModernTurntableBlock extends HorizontalDirectionalBlock implements 
     public static final BooleanProperty HAS_DISC = BooleanProperty.create("has_disc");
     public static final BooleanProperty PLAYING = BooleanProperty.create("playing");
     private static final VoxelShape SHAPE = Block.box(1, 0, 1, 15, 8, 15);
-    private static final MapCodec<ModernTurntableBlock> CODEC = simpleCodec(ModernTurntableBlock::new);
 
     public ModernTurntableBlock(BlockBehaviour.Properties properties) {
         super(properties.sound(SoundType.WOOD)
@@ -69,7 +67,7 @@ public class ModernTurntableBlock extends HorizontalDirectionalBlock implements 
     }
 
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel && (movedByPiston || !state.is(newState.getBlock()))) {
             AudioLinkIndex.removePlaybackSource(serverLevel, pos);
         }
@@ -88,7 +86,7 @@ public class ModernTurntableBlock extends HorizontalDirectionalBlock implements 
      * {@code useWithoutItem} 的行为。</p>
      */
     @Override
-    protected InteractionResult use(BlockState state, Level level, BlockPos pos,
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hitResult) {
         ItemStack stack = player.getItemInHand(hand);
         if (hand == InteractionHand.OFF_HAND) {
@@ -191,12 +189,12 @@ public class ModernTurntableBlock extends HorizontalDirectionalBlock implements 
     }
 
     @Override
-    protected boolean hasAnalogOutputSignal(BlockState state) {
+    public boolean hasAnalogOutputSignal(BlockState state) {
         return true;
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         return level.getBlockEntity(pos) instanceof ModernTurntableBlockEntity turntable
                 ? turntable.getComparatorOutput()
                 : 0;
@@ -262,8 +260,4 @@ public class ModernTurntableBlock extends HorizontalDirectionalBlock implements 
         return RenderShape.MODEL;
     }
 
-    @Override
-    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
-        return CODEC;
-    }
 }

@@ -17,7 +17,6 @@ import com.zhongbai233.net_music_can_play_bili.util.concurrent.CancellableTaskFu
 import com.zhongbai233.net_music_can_play_bili.util.concurrent.NetMusicThreadFactory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -414,8 +413,8 @@ public class LiveStreamerBlockEntity extends BlockEntity implements PlaybackAudi
     }
 
     @Override
-    protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
-        super.saveAdditional(output, registries);
+    protected void saveAdditional(CompoundTag output) {
+        super.saveAdditional(output);
         output.putString(ROOM_ID_TAG, roomId);
         output.putBoolean(PLAYING_TAG, playing);
         output.putBoolean(AUTO_RESUME_TAG, autoResumeRequested);
@@ -428,8 +427,8 @@ public class LiveStreamerBlockEntity extends BlockEntity implements PlaybackAudi
     }
 
     @Override
-    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
-        super.loadAdditional(input, registries);
+    public void load(CompoundTag input) {
+        super.load(input);
         roomId = sanitizeRoomId(getStringOr(input, ROOM_ID_TAG, ""));
         playing = getBooleanOr(input, PLAYING_TAG, false) && !roomId.isEmpty();
         autoResumeRequested = getBooleanOr(input, AUTO_RESUME_TAG, playing) && !roomId.isEmpty();
@@ -458,8 +457,8 @@ public class LiveStreamerBlockEntity extends BlockEntity implements PlaybackAudi
     }
 
     @Override
-    public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+    public net.minecraft.nbt.CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
     }
 
     @Override

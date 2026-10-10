@@ -14,7 +14,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 import org.lwjgl.glfw.GLFW;
 
 @EventBusSubscriber(value = Dist.CLIENT)
@@ -71,7 +71,7 @@ public final class HolographicGlassesKeyHandler {
             if (minecraft.screen != null || minecraft.player == null) {
                 continue;
             }
-            PacketDistributor.sendToServer(new ClearEquippedBindingPacket());
+            NcpbNetworkDispatch.sendToServer(new ClearEquippedBindingPacket());
         }
     }
 }

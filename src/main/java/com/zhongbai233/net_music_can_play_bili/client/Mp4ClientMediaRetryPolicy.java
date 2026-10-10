@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.client;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.mojang.logging.LogUtils;
@@ -53,7 +53,7 @@ final class Mp4ClientMediaRetryPolicy implements ClientMediaRetryPolicy {
         if (!(stack.getItem() instanceof MP4Item)) {
             return false;
         }
-        PacketDistributor.sendToServer(new MP4PlaybackRetryPacket(deviceId, sessionId,
+        NcpbNetworkDispatch.sendToServer(new MP4PlaybackRetryPacket(deviceId, sessionId,
                 Math.max(0L, active.elapsedMillis())));
         return true;
     }

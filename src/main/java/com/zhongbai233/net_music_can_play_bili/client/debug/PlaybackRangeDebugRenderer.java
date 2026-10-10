@@ -157,12 +157,14 @@ public final class PlaybackRangeDebugRenderer {
                         PortDebugRenderTypes.translucentLines(entry.getKey()),
                         (pose, buffer) -> {
                             for (DebugLine debugLine : group) {
-                                buffer.addVertex(pose, debugLine.x1, debugLine.y1, debugLine.z1)
-                                        .setColor(debugLine.color)
-                                        .setNormal(pose, debugLine.nx, debugLine.ny, debugLine.nz);
-                                buffer.addVertex(pose, debugLine.x2, debugLine.y2, debugLine.z2)
-                                        .setColor(debugLine.color)
-                                        .setNormal(pose, debugLine.nx, debugLine.ny, debugLine.nz);
+                                // 1.20.1 的 VertexConsumer 用 vertex/color/normal（1.21 才改名成 addVertex/setColor/setNormal），
+                                // 且没有 (Pose, ...) 重载：改传 pose.pose() / pose.normal()。
+                                buffer.vertex(pose.pose(), debugLine.x1, debugLine.y1, debugLine.z1)
+                                        .color(debugLine.color)
+                                        .normal(pose.normal(), debugLine.nx, debugLine.ny, debugLine.nz);
+                                buffer.vertex(pose.pose(), debugLine.x2, debugLine.y2, debugLine.z2)
+                                        .color(debugLine.color)
+                                        .normal(pose.normal(), debugLine.nx, debugLine.ny, debugLine.nz);
                             }
                         });
             }

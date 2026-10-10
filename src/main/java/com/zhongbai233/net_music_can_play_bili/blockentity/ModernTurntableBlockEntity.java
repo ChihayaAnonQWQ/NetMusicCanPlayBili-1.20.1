@@ -19,12 +19,12 @@ import com.zhongbai233.net_music_can_play_bili.link.AudioPlaybackIndexSavedData;
 import com.zhongbai233.net_music_can_play_bili.server.PlaybackAuditManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -36,7 +36,7 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 import net.minecraft.world.phys.AABB;
 import org.slf4j.Logger;
 
@@ -691,7 +691,8 @@ public class ModernTurntableBlockEntity extends BlockEntity implements PlaybackA
         for (UUID recipientId : recipients) {
             ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(recipientId);
             if (player != null && player.level() == serverLevel) {
-                PacketDistributor.sendToPlayer(player, packet);
+                // 1.20.1：NeoForge 的 PacketDistributor.sendToPlayer 静态便捷方法不存在，改用本工程封装。
+                NcpbNetworkDispatch.sendToPlayer(player, packet);
             }
         }
     }
@@ -962,10 +963,11 @@ public class ModernTurntableBlockEntity extends BlockEntity implements PlaybackA
     }
 
     @Override
-    protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
-        super.saveAdditional(output, registries);
+    protected void saveAdditional(CompoundTag output) {
+        super.saveAdditional(output);
         if (!disc.isEmpty()) {
-            output.put(DISC_TAG, disc.save(registries));
+            // 1.20.1：ItemStack#save(HolderLookup.Provider) 不存在，等价物是 save(CompoundTag)（返回写好的 tag）。
+            output.put(DISC_TAG, disc.save(new CompoundTag()));
         }
         output.putBoolean(PLAYING_TAG, playing);
         output.putString(RAW_URL_TAG, rawUrl);
@@ -991,12 +993,12 @@ public class ModernTurntableBlockEntity extends BlockEntity implements PlaybackA
     }
 
     @Override
-    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
-        super.loadAdditional(input, registries);
+    public void load(CompoundTag input) {
+        super.load(input);
         invalidatePlaybackIntent();
         disc = BiliSongInfoSanitizer
-                .sanitizeDisc(input.contains(DISC_TAG, net.minecraft.nbt.Tag.TAG_COMPOUND)
-                        ? ItemStack.parse(registries, input.getCompound(DISC_TAG)).orElse(ItemStack.EMPTY)
+                .sanitizeDisc(input.contains(DISC_TAG, Tag.TAG_COMPOUND)
+                        ? ItemStack.of(input.getCompound(DISC_TAG))
                         : ItemStack.EMPTY);
         playing = getBooleanOr(input, PLAYING_TAG, false);
         rawUrl = getStringOr(input, RAW_URL_TAG, "");
@@ -1029,8 +1031,8 @@ public class ModernTurntableBlockEntity extends BlockEntity implements PlaybackA
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
     }
 
     @Override

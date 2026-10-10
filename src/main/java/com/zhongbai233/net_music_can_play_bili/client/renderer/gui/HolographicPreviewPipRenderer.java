@@ -110,7 +110,10 @@ public final class HolographicPreviewPipRenderer
                 } else {
                     // 环绕分支使用标准世界坐标(+Y 向上),不能使用 Y 分量为负的 ENTITY_IN_UI 灯光。
                     // LEVEL 的双灯来自世界上方;灯光是 shader uniform,不依赖相机旋转的调用先后顺序。
-                    Lighting.setupLevel();
+                    // 1.20.1：Lighting.setupLevel() 无参重载不存在，1.21 的它对应「不额外变换灯光方向」，
+                    // 这里传入当前的模型视图矩阵；本 PIP 渲染在进入前刚把 ModelViewStack 置为单位阵
+                    // 并 applyModelViewMatrix()，所以传入的就是单位阵，灯光方向与 1.21 的无参版本等价。
+                    Lighting.setupLevel(RenderSystem.getModelViewMatrix());
                     renderOrbitPreview(poseStack, state);
                     bufferSource.endBatch();
                 }
@@ -164,7 +167,9 @@ public final class HolographicPreviewPipRenderer
         try {
             PoseStack orbitPoseStack = new PoseStack();
             if (cameraFrame != null) {
-                orbitPoseStack.mulPose(cameraFrame.matrices().view());
+                // 1.20.1：PoseStack 没有 mulPose(Matrix4f)（那是 1.21 新增），
+                // 直接乘矩阵的等价方法是 mulPoseMatrix(Matrix4f)。
+                orbitPoseStack.mulPoseMatrix(cameraFrame.matrices().view());
             } else {
                 float previewScale = state.scale() / Math.max(1.0F, Math.min(width, height)) * 200.0F;
                 float cameraDistance = ORBIT_DEFAULT_CAMERA_DISTANCE * DEFAULT_PREVIEW_SCALE
@@ -214,7 +219,8 @@ public final class HolographicPreviewPipRenderer
         try {
             PoseStack poseStack = new PoseStack();
             if (cameraFrame != null) {
-                poseStack.mulPose(cameraFrame.matrices().view());
+                // 1.20.1：mulPose(Matrix4f) 不存在，等价方法为 mulPoseMatrix(Matrix4f)。
+                poseStack.mulPoseMatrix(cameraFrame.matrices().view());
             } else {
                 poseStack.translate(0.0F, 0.0F, -0.001F);
                 poseStack.scale(1.0F, -1.0F, -1.0F);
@@ -594,7 +600,7 @@ public final class HolographicPreviewPipRenderer
             boolean selected) {
         poseStack.pushPose();
         poseStack.translate(0.0F, 1.55F, 0.0F);
-        poseStack.mulPose(screenTransform(state, index, 1.0F));
+        poseStack.mulPoseMatrix(screenTransform(state, index, 1.0F));
 
         float halfH = screenHeight(state, index) * 0.5F;
         float halfW = halfH * screenAspect(state, index);
@@ -720,7 +726,7 @@ public final class HolographicPreviewPipRenderer
             boolean selected) {
         poseStack.pushPose();
         poseStack.translate(0.0F, 1.55F, 0.0F);
-        poseStack.mulPose(screenTransform(state, index, -1.0F));
+        poseStack.mulPoseMatrix(screenTransform(state, index, -1.0F));
 
         float halfH = screenHeight(state, index) * 0.5F;
         float halfW = halfH * screenAspect(state, index);
@@ -910,14 +916,16 @@ public final class HolographicPreviewPipRenderer
         // 因此宽度变化必须先 flush 旧批次再切换;消费者也必须重新获取以避免引用过期 builder。
         applyLineWidth(visibleWidth);
         VertexConsumer buffer = bufferSource.getBuffer(RenderType.lines());
-        buffer.addVertex(pose, x1, y1, z1).setColor(color)
-                .setNormal(pose, normalX, normalY, normalZ);
-        buffer.addVertex(pose, x2, y2, z2).setColor(color)
-                .setNormal(pose, normalX, normalY, normalZ);
+        // 1.20.1 顶点链：addVertex(Pose,..)->vertex(pose.pose(),..)、setColor->color、
+        // setNormal(Pose,..)->normal(pose.normal(),..)，并补显式 endVertex()（1.20.1 必需）。
+        buffer.vertex(pose.pose(), x1, y1, z1).color(color)
+                .normal(pose.normal(), normalX, normalY, normalZ).endVertex();
+        buffer.vertex(pose.pose(), x2, y2, z2).color(color)
+                .normal(pose.normal(), normalX, normalY, normalZ).endVertex();
     }
 
     private static void vertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, float z, int color) {
-        buffer.addVertex(pose, x, y, z).setColor(color).setNormal(0.0F, 0.0F, -1.0F);
+        buffer.vertex(pose.pose(), x, y, z).color(color).normal(0.0F, 0.0F, -1.0F).endVertex();
     }
 
     @Override

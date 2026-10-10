@@ -5,7 +5,9 @@ import com.github.tartaricacid.netmusic.network.NetworkHandler;
 import com.github.tartaricacid.netmusic.network.message.SetMusicIDMessage;
 import com.zhongbai233.net_music_can_play_bili.bili.BiliApiClient;
 import com.zhongbai233.net_music_can_play_bili.bili.BiliAudioResolver;
+import com.zhongbai233.net_music_can_play_bili.bridge.ScreenWidgets;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.EditBox;
@@ -41,7 +43,10 @@ public abstract class CDBurnerMenuScreenMixin {
     @Unique
     private AbstractWidget net_music_can_play_bili$pageLabel;
 
-    @Inject(method = "init", at = @At("TAIL"))
+    // remap = true 必须显式写：`init` 来自 MC 的 Screen（生产名 m_7856_），
+    // 而本 mixin 类级是 remap = false（目标是前置模组 NetMusic 的类），
+    // mixin 的类级 remap 会被成员继承（注解处理器字节码实证），不显式覆盖就不会生成 refmap 条目。
+    @Inject(method = "init", at = @At("TAIL"), remap = true)
     private void net_music_can_play_bili$initPageField(CallbackInfo ci) {
         String pageValue = "1";
         boolean focused = false;
@@ -77,9 +82,10 @@ public abstract class CDBurnerMenuScreenMixin {
             }
         };
 
-        ScreenAccessor screen = (ScreenAccessor) this;
-        screen.net_music_can_play_bili$addRenderableWidget(this.net_music_can_play_bili$pageLabel);
-        screen.net_music_can_play_bili$addRenderableWidget(this.net_music_can_play_bili$pageField);
+        // 1.20.1：Screen#addRenderableWidget 是 protected，且其 @Invoker 形态拿不到 refmap 条目
+        // （泛型目标不被注解处理器映射），故走 ScreenWidgets 复刻的等价实现。
+        ScreenWidgets.addRenderableWidget((Screen) (Object) this, this.net_music_can_play_bili$pageLabel);
+        ScreenWidgets.addRenderableWidget((Screen) (Object) this, this.net_music_can_play_bili$pageField);
     }
 
     @Inject(method = "handleCraftButton", at = @At("HEAD"), cancellable = true)
@@ -128,7 +134,7 @@ public abstract class CDBurnerMenuScreenMixin {
 
                     info.readOnly = this.readOnlyButton.selected();
 
-                    NetworkHandler.sendToServer(new SetMusicIDMessage(info));
+                    NetworkHandler.CHANNEL.sendToServer(new SetMusicIDMessage(info));
                 }));
 
         ci.cancel();

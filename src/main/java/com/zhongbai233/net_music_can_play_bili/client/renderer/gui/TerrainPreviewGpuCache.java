@@ -489,9 +489,13 @@ final class TerrainPreviewGpuCache implements AutoCloseable {
                 layer.clearRenderState();
                 continue;
             }
-            shader.setDefaultUniforms(VertexFormat.Mode.QUADS, plan.modelView, projection,
-                    minecraft.getWindow());
-            shader.apply();
+            // 1.20.1 的 ShaderInstance 没有 1.21 的
+            // setDefaultUniforms(VertexFormat.Mode, Matrix4f, Matrix4f, Window)。这段逻辑在 1.20.1
+            // 位于 VertexBuffer#drawWithShader(modelView, projection, shader) 里：它同样设置
+            // ModelViewMat / ProjMat / InverseViewRotMat / 雾 / 时间 / SCREEN_SIZE / LINE_WIDTH 等
+            // 默认 uniform（用传进来的 modelView/projection），再 apply() → draw() → shader.clear()。
+            // 因此循环里改为对每个 VBO 调 drawWithShader(plan.modelView, projection, shader)，
+            // 与 1.21「setDefaultUniforms + apply + 逐个 draw」语义等价。
             Uniform chunkOffset = shader.CHUNK_OFFSET;
             try {
                 for (GpuSection section : draws) {
@@ -500,6 +504,7 @@ final class TerrainPreviewGpuCache implements AutoCloseable {
                         continue;
                     }
                     if (chunkOffset != null) {
+                        // 必须在 drawWithShader 之前设好：apply() 在 drawWithShader 内部发生。
                         chunkOffset.set(
                                 section.key.minBlockX() - plan.frame.originX(),
                                 section.key.minBlockY() - plan.frame.originY(),
@@ -507,7 +512,7 @@ final class TerrainPreviewGpuCache implements AutoCloseable {
                         chunkOffset.upload();
                     }
                     mesh.vertexBuffer.bind();
-                    mesh.vertexBuffer.draw();
+                    mesh.vertexBuffer.drawWithShader(plan.modelView, projection, shader);
                 }
             } finally {
                 if (chunkOffset != null) {

@@ -42,7 +42,9 @@ public final class ControlConsoleRoamingEvents {
 
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
         if (ControlConsoleRoamingSession.isActive()) {
-            ControlConsoleRoamingSession.adjustFlyingSpeed(event.getScrollDeltaY());
+            // 1.20.1 的 Forge MouseScrollingEvent 只有纵向滚轮：getScrollDelta()（javap 实证，
+            // 无 getScrollDeltaY()；横向滚轮要到 1.20.2 才进原版事件）。
+            ControlConsoleRoamingSession.adjustFlyingSpeed(event.getScrollDelta());
             event.setCanceled(true);
         }
     }

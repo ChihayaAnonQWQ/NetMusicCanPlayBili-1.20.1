@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.client;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.client.sync.ClientMediaPlayback;
@@ -76,11 +76,11 @@ final class MP4QueueCompletionPolicy {
         }
         UUID deviceId = MP4Item.readDeviceId(stack);
         if (deviceId == null) {
-            PacketDistributor.sendToServer(new com.zhongbai233.net_music_can_play_bili.network.MP4EnsureDeviceIdPacket(
+            NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network.MP4EnsureDeviceIdPacket(
                     MP4FocusState.active() ? MP4FocusState.hand() : net.minecraft.world.InteractionHand.MAIN_HAND));
             return;
         }
-        PacketDistributor.sendToServer(new MP4PlaybackControlPacket(action, MP4FocusState.selectedQueueIndex(),
+        NcpbNetworkDispatch.sendToServer(new MP4PlaybackControlPacket(action, MP4FocusState.selectedQueueIndex(),
                 Math.round(MP4FocusState.volume() * 1000.0F), Math.max(0L, targetMillis), deviceId));
     }
 }

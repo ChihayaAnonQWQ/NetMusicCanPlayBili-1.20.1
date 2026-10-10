@@ -11,7 +11,16 @@ import java.util.UUID;
 /**
  * 存储在音频路由物品上的共享持久绑定数据。
  * <p>
- * 本类统一管理耳机绑定的 CUSTOM_DATA 结构，避免物品交互、客户端路由和服务端索引直接依赖原始 NBT 键。
+ * 本类统一管理耳机绑定的 NBT 结构，避免物品交互、客户端路由和服务端索引直接依赖原始 NBT 键。
+ * </p>
+ * <p>
+ * <b>1.20.1 移植说明</b>：原始（1.21.1）版本用数据组件 {@code DataComponents.CUSTOM_DATA}
+ * 承载这些键，写入形如
+ * {@code stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), cd -> cd.update(tag -> {...}))}。
+ * 1.20.1 没有数据组件，{@code CUSTOM_DATA} 就是物品自身的 NBT（{@link ItemStack#getTag()} /
+ * {@link ItemStack#getOrCreateTag()}），故写操作直接取 {@code getOrCreateTag()} 后就地 put/remove，
+ * 与原来的 update 等价。唯一区别：1.21.1 的 {@code update} 在结果为空时会自动移除组件，
+ * 1.20.1 需要手工 {@code stack.setTag(null)}（见 {@link #dropIfEmpty}）。
  * </p>
  */
 public final class AudioLinkData {
@@ -30,11 +39,10 @@ public final class AudioLinkData {
         if (stack.isEmpty() || pos == null) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), customData -> customData.update(tag -> {
-            tag.putInt(HEADPHONE_TURNTABLE_X, pos.getX());
-            tag.putInt(HEADPHONE_TURNTABLE_Y, pos.getY());
-            tag.putInt(HEADPHONE_TURNTABLE_Z, pos.getZ());
-        }));
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putInt(HEADPHONE_TURNTABLE_X, pos.getX());
+        tag.putInt(HEADPHONE_TURNTABLE_Y, pos.getY());
+        tag.putInt(HEADPHONE_TURNTABLE_Z, pos.getZ());
     }
 
     @Nullable
@@ -56,10 +64,9 @@ public final class AudioLinkData {
         if (stack.isEmpty() || deviceId == null) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), customData -> customData.update(tag -> {
-            tag.putString(HEADPHONE_MP4, deviceId.toString());
-            tag.putString(HEADPHONE_MEDIA_DEVICE, deviceId.toString());
-        }));
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putString(HEADPHONE_MP4, deviceId.toString());
+        tag.putString(HEADPHONE_MEDIA_DEVICE, deviceId.toString());
     }
 
     @Nullable
@@ -92,22 +99,27 @@ public final class AudioLinkData {
         if (stack.isEmpty()) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), customData -> customData.update(tag -> {
-            tag.remove(HEADPHONE_MP4);
-            tag.remove(HEADPHONE_MEDIA_DEVICE);
-        }));
+        CompoundTag tag = stack.getTag();
+        if (tag == null) {
+            return;
+        }
+        tag.remove(HEADPHONE_MP4);
+        tag.remove(HEADPHONE_MEDIA_DEVICE);
+        dropIfEmpty(stack, tag);
     }
 
     public static void clearHeadphoneTurntable(ItemStack stack) {
         if (stack.isEmpty()) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> {
-                    tag.remove(HEADPHONE_TURNTABLE_X);
-                    tag.remove(HEADPHONE_TURNTABLE_Y);
-                    tag.remove(HEADPHONE_TURNTABLE_Z);
-                }));
+        CompoundTag tag = stack.getTag();
+        if (tag == null) {
+            return;
+        }
+        tag.remove(HEADPHONE_TURNTABLE_X);
+        tag.remove(HEADPHONE_TURNTABLE_Y);
+        tag.remove(HEADPHONE_TURNTABLE_Z);
+        dropIfEmpty(stack, tag);
     }
 
     public static int clearHeadphoneLinks(ItemStack stack) {
@@ -124,14 +136,15 @@ public final class AudioLinkData {
         if (count <= 0) {
             return 0;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> {
-                    tag.remove(HEADPHONE_TURNTABLE_X);
-                    tag.remove(HEADPHONE_TURNTABLE_Y);
-                    tag.remove(HEADPHONE_TURNTABLE_Z);
-                    tag.remove(HEADPHONE_MP4);
-                    tag.remove(HEADPHONE_MEDIA_DEVICE);
-                }));
+        CompoundTag tag = stack.getTag();
+        if (tag != null) {
+            tag.remove(HEADPHONE_TURNTABLE_X);
+            tag.remove(HEADPHONE_TURNTABLE_Y);
+            tag.remove(HEADPHONE_TURNTABLE_Z);
+            tag.remove(HEADPHONE_MP4);
+            tag.remove(HEADPHONE_MEDIA_DEVICE);
+            dropIfEmpty(stack, tag);
+        }
         return count;
     }
 
@@ -147,5 +160,16 @@ public final class AudioLinkData {
     private static CompoundTag customTag(ItemStack stack) {
         CompoundTag customData = stack.getTag();
         return customData != null && !customData.isEmpty() ? customData.copy() : null;
+    }
+
+    /**
+     * 1.20.1 专属收尾：1.21.1 的 {@code ItemStack#update} 在更新结果为空时会自动移除
+     * {@code CUSTOM_DATA} 组件；1.20.1 的空 {@link CompoundTag} 会留在物品上，
+     * 主动置空以免污染工具提示与网络同步（{@code ItemStack#setTag(null)} 与"无 tag"序列化等价）。
+     */
+    private static void dropIfEmpty(ItemStack stack, CompoundTag tag) {
+        if (tag.isEmpty()) {
+            stack.setTag(null);
+        }
     }
 }

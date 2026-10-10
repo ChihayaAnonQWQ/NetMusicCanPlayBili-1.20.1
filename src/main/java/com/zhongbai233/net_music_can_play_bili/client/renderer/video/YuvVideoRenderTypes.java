@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
 import com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili;
+import com.zhongbai233.net_music_can_play_bili.port.shim.PortRenderStateShards;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -148,22 +149,32 @@ public final class YuvVideoRenderTypes {
                 1536,
                 false,
                 false,
-                RenderType.CompositeState.builder()
-                        .setShaderState(new RenderStateShard.ShaderStateShard(() -> shader))
-                        .setTextureState(new RenderStateShard.TextureStateShard(sampler0, false, false))
-                        .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
-                        .setCullState(RenderStateShard.NO_CULL)
-                        .setWriteMaskState(YUV_NO_DEPTH_WRITE
-                                ? RenderStateShard.COLOR_WRITE
-                                : RenderStateShard.COLOR_DEPTH_WRITE)
-                        .setTexturingState(new RenderStateShard.TexturingStateShard("yuv_planes",
-                                () -> {
-                                    RenderSystem.setShaderTexture(1, sampler1);
-                                    RenderSystem.setShaderTexture(2, sampler2);
-                                },
-                                () -> {
-                                }))
-                        .createCompositeState(false));
+                // 1.20.1：TRANSLUCENT_TRANSPARENCY / NO_CULL / COLOR_WRITE / COLOR_DEPTH_WRITE 还是
+                // protected，包外不能直接引用；改由 PortRenderStateShards（RenderStateShard 子类）
+                // 原样转发。这里只做等价替换，状态项与顺序与 1.21.1 版本逐项一致，
+                // 不新增/删除任何状态（尤其不加 lightmap 之类的额外状态）。
+                yuvVideoState(
+                        RenderType.CompositeState.builder()
+                                .setShaderState(new RenderStateShard.ShaderStateShard(() -> shader))
+                                .setTextureState(new RenderStateShard.TextureStateShard(sampler0, false, false))
+                                .setTexturingState(new RenderStateShard.TexturingStateShard("yuv_planes",
+                                        () -> {
+                                            RenderSystem.setShaderTexture(1, sampler1);
+                                            RenderSystem.setShaderTexture(2, sampler2);
+                                        },
+                                        () -> {
+                                        }))));
+    }
+
+    /** YUV 面片的公共状态集合：translucent + no-cull + 按策略选择的写掩码。 */
+    private static RenderType.CompositeState yuvVideoState(
+            RenderType.CompositeState.CompositeStateBuilder builder) {
+        RenderType.CompositeState.CompositeStateBuilder applied =
+                PortRenderStateShards.translucentNoCull(builder);
+        applied = YUV_NO_DEPTH_WRITE
+                ? PortRenderStateShards.colorWrite(applied)
+                : PortRenderStateShards.colorDepthWrite(applied);
+        return applied.createCompositeState(false);
     }
 
     static RenderType yOnlyTexturedProbeEntity(ResourceLocation yTexture) {
@@ -200,6 +211,8 @@ public final class YuvVideoRenderTypes {
             YuvVideoRenderTypes::createVideoRgbaEmissiveDepthWriting);
 
     private static RenderType createVideoRgbaEmissiveDepthWriting(ResourceLocation texture) {
+        // 1.20.1：TRANSLUCENT_TRANSPARENCY / NO_CULL / COLOR_DEPTH_WRITE 是 protected，
+        // 由 PortRenderStateShards 原样转发；状态集合与 1.21.1 版本逐项一致（不含 lightmap 等额外状态）。
         return RenderType.create(
                 "ncpb_video_rgba_emissive",
                 DefaultVertexFormat.NEW_ENTITY,
@@ -207,13 +220,11 @@ public final class YuvVideoRenderTypes {
                 1536,
                 true,
                 true,
-                RenderType.CompositeState.builder()
-                        .setShaderState(new RenderStateShard.ShaderStateShard(
-                                GameRenderer::getRendertypeEntityTranslucentEmissiveShader))
-                        .setTextureState(new RenderStateShard.TextureStateShard(texture, false, false))
-                        .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
-                        .setCullState(RenderStateShard.NO_CULL)
-                        .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+                PortRenderStateShards.colorDepthWrite(PortRenderStateShards.translucentNoCull(
+                        RenderType.CompositeState.builder()
+                                .setShaderState(new RenderStateShard.ShaderStateShard(
+                                        GameRenderer::getRendertypeEntityTranslucentEmissiveShader))
+                                .setTextureState(new RenderStateShard.TextureStateShard(texture, false, false))))
                         .createCompositeState(true));
     }
 

@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * renderCrosshair(GuiGraphics, DeltaTracker),注入点随之改名。</p> */
 @Mixin(Gui.class)
 public abstract class GuiRoamingCrosshairMixin {
-    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
     private void net_music_can_play_bili$hideVanillaCrosshair(GuiGraphics graphics, CallbackInfo callback) {
         if (ControlConsoleRoamingSession.isActive()) {
             callback.cancel();

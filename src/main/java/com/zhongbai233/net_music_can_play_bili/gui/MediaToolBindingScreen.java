@@ -7,7 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 public class MediaToolBindingScreen extends AbstractContainerScreen<MediaToolBindingMenu> {
     private static final int WIDTH = 220;
@@ -25,11 +25,11 @@ public class MediaToolBindingScreen extends AbstractContainerScreen<MediaToolBin
         int lx = leftPos, ty = topPos;
         addRenderableWidget(new BlackGoldButton(lx + 153, ty + 62, 20, 20,
                 Component.literal("↓"),
-                button -> PacketDistributor.sendToServer(new MediaToolConfirmBindingPacket()),
+                button -> NcpbNetworkDispatch.sendToServer(new MediaToolConfirmBindingPacket()),
                 BlackGoldUi.GOLD));
         addRenderableWidget(new BlackGoldButton(lx + 22, ty + 80, 70, 20,
                 Component.translatable("gui.net_music_can_play_bili.media_tool.clear"),
-                button -> PacketDistributor.sendToServer(new MediaToolClearBindingPacket()),
+                button -> NcpbNetworkDispatch.sendToServer(new MediaToolClearBindingPacket()),
                 BlackGoldUi.GOLD));
     }
 

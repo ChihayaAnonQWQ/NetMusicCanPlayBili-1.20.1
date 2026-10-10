@@ -97,14 +97,16 @@ public final class PortSubmitNodeCollector implements AutoCloseable {
                 VertexConsumer background = source.getBuffer(RenderType.textBackground());
                 int width = font.width(entry.visual);
                 int height = font.lineHeight;
-                background.addVertex(entry.pose, entry.x - 1.0F, entry.y - 1.0F, 0.0F)
-                        .setColor(entry.backgroundColor).setLight(entry.packedLight);
-                background.addVertex(entry.pose, entry.x - 1.0F, entry.y + height, 0.0F)
-                        .setColor(entry.backgroundColor).setLight(entry.packedLight);
-                background.addVertex(entry.pose, entry.x + width, entry.y + height, 0.0F)
-                        .setColor(entry.backgroundColor).setLight(entry.packedLight);
-                background.addVertex(entry.pose, entry.x + width, entry.y - 1.0F, 0.0F)
-                        .setColor(entry.backgroundColor).setLight(entry.packedLight);
+                // 1.20.1：addVertex/setColor/setLight -> vertex/color/uv2，且每个顶点必须 endVertex() 收尾。
+                // textBackground() 的格式是 POSITION_COLOR_LIGHTMAP，写入顺序保持 position -> color -> light。
+                background.vertex(entry.pose, entry.x - 1.0F, entry.y - 1.0F, 0.0F)
+                        .color(entry.backgroundColor).uv2(entry.packedLight).endVertex();
+                background.vertex(entry.pose, entry.x - 1.0F, entry.y + height, 0.0F)
+                        .color(entry.backgroundColor).uv2(entry.packedLight).endVertex();
+                background.vertex(entry.pose, entry.x + width, entry.y + height, 0.0F)
+                        .color(entry.backgroundColor).uv2(entry.packedLight).endVertex();
+                background.vertex(entry.pose, entry.x + width, entry.y - 1.0F, 0.0F)
+                        .color(entry.backgroundColor).uv2(entry.packedLight).endVertex();
             }
             font.drawInBatch(entry.visual, entry.x, entry.y, entry.color, entry.shadow, entry.pose, source,
                     entry.mode, entry.packedLight, entry.packedOverlay);

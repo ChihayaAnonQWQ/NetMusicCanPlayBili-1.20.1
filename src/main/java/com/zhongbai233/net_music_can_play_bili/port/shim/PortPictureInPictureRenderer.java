@@ -112,8 +112,10 @@ public abstract class PortPictureInPictureRenderer<S> implements AutoCloseable {
         RenderSystem.lineWidth(1.0F);
         RenderSystem.enableCull();
         RenderSystem.enableDepthTest();
-        RenderSystem.getModelViewStack().pushMatrix();
-        RenderSystem.getModelViewStack().identity();
+        // 1.20.1：RenderSystem.getModelViewStack() 返回 PoseStack（1.21 是 Matrix4fStack），
+        // 方法名为 pushPose()/setIdentity()/popPose()（1.21 是 pushMatrix()/identity()/popMatrix()）。
+        RenderSystem.getModelViewStack().pushPose();
+        RenderSystem.getModelViewStack().setIdentity();
         RenderSystem.applyModelViewMatrix();
 
         target.bindWrite(true);
@@ -129,7 +131,7 @@ public abstract class PortPictureInPictureRenderer<S> implements AutoCloseable {
             RenderSystem.disableScissor();
             target.unbindWrite();
             minecraft.getMainRenderTarget().bindWrite(true);
-            RenderSystem.getModelViewStack().popMatrix();
+            RenderSystem.getModelViewStack().popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.disableCull();
             RenderSystem.disableDepthTest();

@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.client;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.gui.MP4FocusScreen;
@@ -67,7 +67,7 @@ public final class MP4Client {
             if (deviceId != null && DEVICE_STATES.containsKey(PlaybackSourceId.of(deviceId))) {
                 continue;
             }
-            PacketDistributor.sendToServer(new MP4EnsureInventoryDeviceIdPacket(slot));
+            NcpbNetworkDispatch.sendToServer(new MP4EnsureInventoryDeviceIdPacket(slot));
             requested = true;
         }
         return requested;
@@ -82,7 +82,7 @@ public final class MP4Client {
         if (deviceId != null && DEVICE_STATES.containsKey(PlaybackSourceId.of(deviceId))) {
             return false;
         }
-        PacketDistributor.sendToServer(new MP4EnsureDeviceIdPacket(hand));
+        NcpbNetworkDispatch.sendToServer(new MP4EnsureDeviceIdPacket(hand));
         return true;
     }
 
@@ -100,7 +100,7 @@ public final class MP4Client {
         boolean hintJustShown = MP4FocusState.showRotationHintIfNotShown();
         minecraft.setScreen(new MP4FocusScreen(hand));
         if (minecraft.getConnection() != null) {
-            PacketDistributor.sendToServer(new MP4EnsureDeviceIdPacket(hand));
+            NcpbNetworkDispatch.sendToServer(new MP4EnsureDeviceIdPacket(hand));
             if (hintJustShown) {
                 syncFocusedStateToServer();
             }
@@ -122,6 +122,29 @@ public final class MP4Client {
         }
     }
 
+
+    /**
+     * 服务端修正后的 DeviceID 回写到客户端当前打开的容器槽位。
+     *
+     * <p>1.20.1 移植：本方法在上游 1.21.1 分支存在，移植时整段方法体丢失，
+     * 导致 {@code network/MP4ContainerDeviceIdPacket#handle} 报 cannot find symbol。
+     * 实现按上游 1.21.1 源码原样恢复；{@code Player#containerMenu}（public 字段）、
+     * {@code AbstractContainerMenu#slots}（public final）与 {@code Slot#getItem()} 在 1.20.1 均可用。</p>
+     */
+    public static void receiveContainerDeviceId(int containerSlotIndex, UUID deviceId) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || deviceId == null || minecraft.player.containerMenu == null) {
+            return;
+        }
+        if (containerSlotIndex < 0 || containerSlotIndex >= minecraft.player.containerMenu.slots.size()) {
+            return;
+        }
+        ItemStack stack = minecraft.player.containerMenu.slots.get(containerSlotIndex).getItem();
+        if (!(stack.getItem() instanceof MP4Item)) {
+            return;
+        }
+        MP4Item.writeDeviceId(stack, deviceId);
+    }
 
     public static void receiveInventoryDeviceId(int inventorySlot, UUID deviceId) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -367,7 +390,7 @@ public final class MP4Client {
         if (minecraft.getConnection() != null) {
             java.util.UUID deviceId = MP4Item.readDeviceId(stack);
             if (deviceId == null) {
-                PacketDistributor.sendToServer(new MP4EnsureDeviceIdPacket(MP4FocusState.hand()));
+                NcpbNetworkDispatch.sendToServer(new MP4EnsureDeviceIdPacket(MP4FocusState.hand()));
                 focusedStateSyncRequested = true;
                 fastSyncTicks = FAST_SYNC_INTERVAL_TICKS;
                 return;
@@ -399,10 +422,10 @@ public final class MP4Client {
                 continue;
             }
             cacheLocalState(deviceId, pending.state(), stack);
-            PacketDistributor.sendToServer(MP4StatePacket.fromState(pending.state(), deviceId,
+            NcpbNetworkDispatch.sendToServer(MP4StatePacket.fromState(pending.state(), deviceId,
                     pending.updatedAtMillis(), pending.sequence()));
             if (pending.state().playing()) {
-                PacketDistributor.sendToServer(new MP4PlaybackControlPacket(
+                NcpbNetworkDispatch.sendToServer(new MP4PlaybackControlPacket(
                         MP4PlaybackControlPacket.Action.VOLUME,
                         pending.state().selectedQueueIndex(),
                         pending.state().volumePerMille(),

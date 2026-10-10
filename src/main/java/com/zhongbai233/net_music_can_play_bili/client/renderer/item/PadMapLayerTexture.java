@@ -283,7 +283,17 @@ final class PadMapLayerTexture implements AutoCloseable {
             return;
         }
         // 1.21.1 NativeImage.setPixelRGBA/fillRect 使用 ABGR 字节序；源常量是 ARGB 约定。
-        image.fillRect(left, top, right - left, bottom - top, FastColor.ABGR32.fromArgb32(color));
+        // 1.20.1 没有 FastColor.ABGR32.fromArgb32(int)（1.21 新增），等价实现就是 R/B 交换，
+        // 见 argbToAbgr。
+        image.fillRect(left, top, right - left, bottom - top, argbToAbgr(color));
+    }
+
+    /**
+     * ARGB 打包色 -> ABGR 打包色，等价于 1.21 的 {@code FastColor.ABGR32.fromArgb32(int)}：
+     * alpha/绿通道原位保留，红蓝互换。
+     */
+    private static int argbToAbgr(int argb) {
+        return (argb & 0xFF00FF00) | ((argb & 0x00FF0000) >>> 16) | ((argb & 0x000000FF) << 16);
     }
 
     @Override

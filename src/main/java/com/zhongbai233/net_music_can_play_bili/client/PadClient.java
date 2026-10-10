@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.client;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.gui.PadFocusScreen;
@@ -154,7 +154,7 @@ public final class PadClient {
             if (!PAD_INDEX.containsKey(sourceId)) {
                 continue;
             }
-            PacketDistributor.sendToServer(new PadStatePacket(deviceId, pending.document(), pending.updatedAtMillis(),
+            NcpbNetworkDispatch.sendToServer(new PadStatePacket(deviceId, pending.document(), pending.updatedAtMillis(),
                     pending.sequence()));
         }
         syncRequested = !PENDING_SYNCS.isEmpty();

@@ -10,12 +10,12 @@ import com.zhongbai233.net_music_can_play_bili.item.pad.PadMediaEntry;
 import com.zhongbai233.net_music_can_play_bili.item.pad.PadTriggerMode;
 import com.zhongbai233.net_music_can_play_bili.item.pad.PadTriggerPoint;
 import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 import com.zhongbai233.net_music_can_play_bili.network.PadDocumentStore;
 import com.zhongbai233.net_music_can_play_bili.network.PadStateMirrorPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -31,7 +31,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,8 +100,8 @@ public class PadItem extends Item {
             return existing;
         }
         UUID created = UUID.randomUUID();
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> tag.putString(DATA_DEVICE_ID, created.toString())));
+        // 1.20.1：CUSTOM_DATA 组件即物品自身 NBT，update 等价于就地 putString。
+        stack.getOrCreateTag().putString(DATA_DEVICE_ID, created.toString());
         return created;
     }
 
@@ -110,8 +109,8 @@ public class PadItem extends Item {
         if (!isPad(stack) || deviceId == null) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> tag.putString(DATA_DEVICE_ID, deviceId.toString())));
+        // 1.20.1：同 getOrCreateDeviceId，CUSTOM_DATA 即物品自身 NBT。
+        stack.getOrCreateTag().putString(DATA_DEVICE_ID, deviceId.toString());
     }
 
     public static ItemStack findByDeviceId(Player player, UUID deviceId) {
@@ -220,16 +219,22 @@ public class PadItem extends Item {
         if (!isPad(stack)) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> tag.putBoolean(DATA_LOCKED, locked)));
+        // 1.20.1：CUSTOM_DATA 即物品自身 NBT。
+        stack.getOrCreateTag().putBoolean(DATA_LOCKED, locked);
     }
 
     public static void stripDocumentData(ItemStack stack) {
         if (!isPad(stack)) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(PadItem::removeDocumentData));
+        // 1.20.1：CUSTOM_DATA 即物品自身 NBT；改完若 tag 为空则置空（等价于 1.21.1 移除该组件）。
+        CompoundTag tag = stack.getTag();
+        if (tag != null) {
+            removeDocumentData(tag);
+            if (tag.isEmpty()) {
+                stack.setTag(null);
+            }
+        }
     }
 
     private static boolean hasLegacyDocument(CompoundTag tag) {
@@ -313,7 +318,9 @@ public class PadItem extends Item {
         if (player == null || deviceId == null || document == null) {
             return;
         }
-        PacketDistributor.sendToPlayer(player, new PadStateMirrorPacket(deviceId, document, MonotonicMediaClock.nowTick()));
+        // 1.20.1：NeoForge 的 PacketDistributor.sendToPlayer 静态便捷方法不存在，
+        // 改用本工程既有的 NcpbNetworkDispatch 封装（内部走 SimpleChannel + PLAYER 目标）。
+        NcpbNetworkDispatch.sendToPlayer(player, new PadStateMirrorPacket(deviceId, document, MonotonicMediaClock.nowTick()));
     }
 
     @Override
@@ -398,12 +405,14 @@ public class PadItem extends Item {
                 continue;
             }
             int id = LinkHelper.getIntOr(compound, DATA_MEDIA_ID, 0);
+            // 1.20.1 没有 ItemStack.OPTIONAL_CODEC（1.20.5+ 数据组件序列化），
+            // 等价物是原版 NBT 读写：ItemStack.of(tag)，解析失败返回 ItemStack.EMPTY。
             Tag stackTag = compound.get(DATA_MEDIA_STACK);
-            if (stackTag != null) {
-                ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, stackTag)
-                        .result()
-                        .filter(PadItem::isNetMusicDisc)
-                        .ifPresent(stack -> result.add(new PadMediaEntry(id, BiliSongInfoSanitizer.sanitizeDisc(stack))));
+            if (stackTag instanceof CompoundTag stackCompound) {
+                ItemStack stack = ItemStack.of(stackCompound);
+                if (isNetMusicDisc(stack)) {
+                    result.add(new PadMediaEntry(id, BiliSongInfoSanitizer.sanitizeDisc(stack)));
+                }
             }
         }
         return result;
@@ -413,50 +422,51 @@ public class PadItem extends Item {
         if (!isPad(stack) || document == null) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), customData -> customData.update(tag -> {
-            tag.putString(DATA_TITLE, document.title());
-            tag.putString(DATA_AUTHOR, document.author());
-            tag.putBoolean(DATA_LOCKED, document.locked());
-            tag.putLong(DATA_UPDATED_AT, document.updatedAtMillis());
-            tag.putLong(DATA_SEQUENCE, document.sequence());
+        // 1.20.1：CUSTOM_DATA 组件即物品自身 NBT。1.21.1 的
+        // stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), cd -> cd.update(tag -> {...}))
+        // 等价于取 getOrCreateTag() 后就地写入（空 tag 与无 tag 在序列化上等价，无需额外收尾）。
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putString(DATA_TITLE, document.title());
+        tag.putString(DATA_AUTHOR, document.author());
+        tag.putBoolean(DATA_LOCKED, document.locked());
+        tag.putLong(DATA_UPDATED_AT, document.updatedAtMillis());
+        tag.putLong(DATA_SEQUENCE, document.sequence());
 
-            ListTag media = new ListTag();
-            for (PadMediaEntry entry : document.mediaEntries()) {
-                if (entry == null || !isNetMusicDisc(entry.disc())) {
-                    continue;
-                }
-                CompoundTag compound = new CompoundTag();
-                compound.putInt(DATA_MEDIA_ID, entry.mediaId());
-                ItemStack sanitized = BiliSongInfoSanitizer.sanitizeDisc(entry.disc());
-                ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, sanitized)
-                        .resultOrPartial(error -> {
-                        })
-                        .ifPresent(encoded -> compound.put(DATA_MEDIA_STACK, encoded));
-                media.add(compound);
+        ListTag media = new ListTag();
+        for (PadMediaEntry entry : document.mediaEntries()) {
+            if (entry == null || !isNetMusicDisc(entry.disc())) {
+                continue;
             }
-            tag.put(DATA_MEDIA, media);
+            CompoundTag compound = new CompoundTag();
+            compound.putInt(DATA_MEDIA_ID, entry.mediaId());
+            ItemStack sanitized = BiliSongInfoSanitizer.sanitizeDisc(entry.disc());
+            // 1.20.1：ItemStack.OPTIONAL_CODEC.encodeStart 的等价物是 ItemStack#save(CompoundTag)；
+            // 编码结构随之为 1.20.1 的 "id"/"Count"/"tag" 布局。
+            compound.put(DATA_MEDIA_STACK, sanitized.save(new CompoundTag()));
+            media.add(compound);
+        }
+        tag.put(DATA_MEDIA, media);
 
-            ListTag points = new ListTag();
-            for (PadTriggerPoint point : document.triggerPoints()) {
-                if (point == null) {
-                    continue;
-                }
-                CompoundTag compound = new CompoundTag();
-                compound.putString(DATA_POINT_ID, point.pointId().toString());
-                compound.putString(DATA_POINT_NAME, point.name());
-                compound.putDouble(DATA_POINT_X, point.x());
-                compound.putDouble(DATA_POINT_Y, point.y());
-                compound.putDouble(DATA_POINT_Z, point.z());
-                compound.putInt(DATA_POINT_RADIUS, point.radiusBlocks());
-                compound.putInt(DATA_POINT_MEDIA_ID, point.mediaId());
-                compound.putString(DATA_POINT_MODE, point.triggerMode().name());
-                compound.putBoolean(DATA_POINT_LOOP, point.loop());
-                compound.putInt(DATA_POINT_VOLUME, point.volumePerMille());
-                compound.putBoolean(DATA_POINT_VISIBLE, point.visible());
-                points.add(compound);
+        ListTag points = new ListTag();
+        for (PadTriggerPoint point : document.triggerPoints()) {
+            if (point == null) {
+                continue;
             }
-            tag.put(DATA_POINTS, points);
-        }));
+            CompoundTag compound = new CompoundTag();
+            compound.putString(DATA_POINT_ID, point.pointId().toString());
+            compound.putString(DATA_POINT_NAME, point.name());
+            compound.putDouble(DATA_POINT_X, point.x());
+            compound.putDouble(DATA_POINT_Y, point.y());
+            compound.putDouble(DATA_POINT_Z, point.z());
+            compound.putInt(DATA_POINT_RADIUS, point.radiusBlocks());
+            compound.putInt(DATA_POINT_MEDIA_ID, point.mediaId());
+            compound.putString(DATA_POINT_MODE, point.triggerMode().name());
+            compound.putBoolean(DATA_POINT_LOOP, point.loop());
+            compound.putInt(DATA_POINT_VOLUME, point.volumePerMille());
+            compound.putBoolean(DATA_POINT_VISIBLE, point.visible());
+            points.add(compound);
+        }
+        tag.put(DATA_POINTS, points);
     }
 
     private static List<PadTriggerPoint> readTriggerPoints(CompoundTag tag) {

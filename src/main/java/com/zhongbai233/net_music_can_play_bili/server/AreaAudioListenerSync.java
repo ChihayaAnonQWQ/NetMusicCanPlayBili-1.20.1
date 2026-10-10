@@ -3,12 +3,12 @@ package com.zhongbai233.net_music_can_play_bili.server;
 import com.zhongbai233.net_music_can_play_bili.compat.areacontrol.AreaControlAudioCompat;
 import com.zhongbai233.net_music_can_play_bili.media.audio.AreaAudioZone;
 import com.zhongbai233.net_music_can_play_bili.network.AreaAudioListenerPacket;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.network.PacketDistributor;
 
 import java.util.Map;
 import java.util.UUID;
@@ -52,7 +52,9 @@ public final class AreaAudioListenerSync {
                 BlockPos.containing(player.position()));
         AreaAudioZone previous = LAST_SENT.put(player.getUUID(), zone);
         if (force || !zone.equals(previous)) {
-            PacketDistributor.sendToPlayer(player, new AreaAudioListenerPacket(zone));
+            // 1.20.1：NeoForge 的 PacketDistributor.sendToPlayer 静态便捷方法在 Forge 1.20.1 不存在，
+            // 改用本工程既有封装（SimpleChannel + PacketDistributor.PLAYER 目标）。
+            NcpbNetworkDispatch.sendToPlayer(player, new AreaAudioListenerPacket(zone));
         }
     }
 }

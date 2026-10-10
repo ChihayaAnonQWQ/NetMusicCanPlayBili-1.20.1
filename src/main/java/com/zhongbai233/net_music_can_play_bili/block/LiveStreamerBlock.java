@@ -1,6 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.block;
 
-import com.mojang.serialization.MapCodec;
 import com.zhongbai233.net_music_can_play_bili.blockentity.LiveStreamerBlockEntity;
 import com.zhongbai233.net_music_can_play_bili.client.LiveStreamerClientHooks;
 import com.zhongbai233.net_music_can_play_bili.init.ModBlockEntities;
@@ -36,7 +35,6 @@ import net.minecraft.world.phys.BlockHitResult;
 /** 直播机方块：机柜造型，右键打开控制界面，可与音响、投影仪链接。 */
 public class LiveStreamerBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final BooleanProperty PLAYING = BooleanProperty.create("playing");
-    private static final MapCodec<LiveStreamerBlock> CODEC = simpleCodec(LiveStreamerBlock::new);
 
     public LiveStreamerBlock(BlockBehaviour.Properties properties) {
         super(properties.sound(SoundType.METAL)
@@ -62,7 +60,7 @@ public class LiveStreamerBlock extends HorizontalDirectionalBlock implements Ent
     }
 
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel && (movedByPiston || !state.is(newState.getBlock()))) {
             AudioLinkIndex.removePlaybackSource(serverLevel, pos);
         }
@@ -82,7 +80,7 @@ public class LiveStreamerBlock extends HorizontalDirectionalBlock implements Ent
      * <p>本方块两条路都归结为「打开直播机界面」，故合并后只有一个出口。</p>
      */
     @Override
-    protected InteractionResult use(BlockState state, Level level, BlockPos pos,
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hitResult) {
         ItemStack stack = player.getItemInHand(hand);
         if (hand == InteractionHand.OFF_HAND) {
@@ -155,8 +153,4 @@ public class LiveStreamerBlock extends HorizontalDirectionalBlock implements Ent
         return RenderShape.MODEL;
     }
 
-    @Override
-    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
-        return CODEC;
-    }
 }

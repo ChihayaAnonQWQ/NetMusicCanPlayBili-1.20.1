@@ -5,7 +5,7 @@ import com.zhongbai233.net_music_can_play_bili.gui.ControlConsoleGuideScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 import java.util.UUID;
 
@@ -30,7 +30,7 @@ public final class ControlConsoleClient {
                 releaseLease(activeLease.pos());
             }
             pendingOpen = immutablePos;
-            PacketDistributor.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
+            NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
                     .ControlConsoleEditLeasePacket(pos,
                     com.zhongbai233.net_music_can_play_bili.network.ControlConsoleEditLeasePacket.Action.OPEN,
                     null));
@@ -104,7 +104,7 @@ public final class ControlConsoleClient {
                 || System.currentTimeMillis() < activeLease.nextRenewMillis()) {
             return;
         }
-        PacketDistributor.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
+        NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
                 .ControlConsoleEditLeasePacket(pos,
                 com.zhongbai233.net_music_can_play_bili.network.ControlConsoleEditLeasePacket.Action.RENEW,
                 activeLease.leaseId()));
@@ -116,7 +116,7 @@ public final class ControlConsoleClient {
         if (activeLease == null || !activeLease.pos().equals(pos)) {
             return;
         }
-        PacketDistributor.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
+        NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
                 .ControlConsoleEditLeasePacket(pos,
                 com.zhongbai233.net_music_can_play_bili.network.ControlConsoleEditLeasePacket.Action.RELEASE,
                 activeLease.leaseId()));

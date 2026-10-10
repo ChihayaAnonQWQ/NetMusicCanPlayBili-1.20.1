@@ -31,7 +31,7 @@ public final class VideoPlaceholderDebugScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics) {
         graphics.fill(0, 0, width, height, 0xFF05070B);
     }
 

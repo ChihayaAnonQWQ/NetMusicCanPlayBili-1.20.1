@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.gui;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.blockentity.LiveStreamerBlockEntity;
@@ -98,7 +98,7 @@ public class LiveStreamerScreen extends BlackGoldScreen {
             return;
         }
         lastSentVolumePerMille = volumePerMille;
-        PacketDistributor.sendToServer(new LiveStreamerControlPacket(blockPos,
+        NcpbNetworkDispatch.sendToServer(new LiveStreamerControlPacket(blockPos,
                 LiveStreamerControlPacket.Action.SET_VOLUME, "", volumePerMille));
     }
 
@@ -107,7 +107,7 @@ public class LiveStreamerScreen extends BlackGoldScreen {
             return;
         }
         String roomInput = roomField != null ? roomField.getValue().trim() : "";
-        PacketDistributor.sendToServer(new LiveStreamerControlPacket(blockPos, action, roomInput, 0));
+        NcpbNetworkDispatch.sendToServer(new LiveStreamerControlPacket(blockPos, action, roomInput, 0));
     }
 
     @Override
@@ -118,12 +118,12 @@ public class LiveStreamerScreen extends BlackGoldScreen {
         LiveStreamerBlockEntity be = getStreamerBE();
         String roomInput = roomField != null ? roomField.getValue().trim() : "";
         if (be != null && !roomInput.equals(be.getRoomId())) {
-            PacketDistributor.sendToServer(new LiveStreamerControlPacket(blockPos,
+            NcpbNetworkDispatch.sendToServer(new LiveStreamerControlPacket(blockPos,
                     LiveStreamerControlPacket.Action.SET_ROOM, roomInput, 0));
         }
         int volumePerMille = Math.round(Math.max(0.0f, Math.min(1.0f, volume)) * 1000.0f);
         if (be == null || be.getVolumePerMille() != volumePerMille) {
-            PacketDistributor.sendToServer(new LiveStreamerControlPacket(blockPos,
+            NcpbNetworkDispatch.sendToServer(new LiveStreamerControlPacket(blockPos,
                     LiveStreamerControlPacket.Action.SET_VOLUME, "", volumePerMille));
         }
     }

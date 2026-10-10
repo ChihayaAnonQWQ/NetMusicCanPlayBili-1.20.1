@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.gui;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.blockentity.LyricProjectorBlockEntity;
@@ -111,7 +111,7 @@ public class LyricProjectorScreen extends BlackGoldScreen {
     protected void onSave() {
         LyricProjectorBlockEntity be = getProjectorBE();
         if (be != null && minecraft != null && minecraft.getConnection() != null) {
-            PacketDistributor.sendToServer(new LyricProjectorConfigPacket(
+            NcpbNetworkDispatch.sendToServer(new LyricProjectorConfigPacket(
                     blockPos,
                     be.getProjectionYaw(), be.getProjectionPitch(), be.getProjectionScale(),
                     be.getProjectionHeight(), be.getProjectionDistanceX(), be.getProjectionDistanceZ(),

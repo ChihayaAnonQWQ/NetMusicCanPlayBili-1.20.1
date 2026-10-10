@@ -59,7 +59,8 @@ public final class HeadphoneAbility {
         Attribute headphoneAttribute = ModAttributes.HEADPHONES.get();
         Multimap<Attribute, AttributeModifier> modifiers = stack.getAttributeModifiers(EquipmentSlot.HEAD);
         for (var entry : modifiers.entries()) {
-            if (entry.getKey() == headphoneAttribute && entry.getValue().amount() > 0.0D) {
+            // 1.20.1：AttributeModifier 只有 getAmount()，1.21.1 的 record 风格 amount() 不存在。
+            if (entry.getKey() == headphoneAttribute && entry.getValue().getAmount() > 0.0D) {
                 return true;
             }
         }

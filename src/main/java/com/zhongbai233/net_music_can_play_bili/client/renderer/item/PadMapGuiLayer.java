@@ -50,15 +50,17 @@ final class PadMapGuiLayer {
         com.mojang.blaze3d.systems.RenderSystem.setShader(
                 net.minecraft.client.renderer.GameRenderer::getPositionTexColorShader);
         org.joml.Matrix4f matrix = g.pose().last().pose();
+        // 1.20.1：Tesselator#begin(...) 不存在（改为 getBuilder() + begin(...)），
+        // buildOrThrow() 不存在（等价物 end()）；顶点链改用 1.20.1 名称并补显式 endVertex()。
         com.mojang.blaze3d.vertex.BufferBuilder builder =
-                com.mojang.blaze3d.vertex.Tesselator.getInstance().begin(
-                        com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS,
-                        com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR);
-        builder.addVertex(matrix, left, bottom, 0.0F).setUv(u0, vBottom).setColor(-1);
-        builder.addVertex(matrix, right, bottom, 0.0F).setUv(u1, vBottom).setColor(-1);
-        builder.addVertex(matrix, right, top, 0.0F).setUv(u1, vTop).setColor(-1);
-        builder.addVertex(matrix, left, top, 0.0F).setUv(u0, vTop).setColor(-1);
-        com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(builder.buildOrThrow());
+                com.mojang.blaze3d.vertex.Tesselator.getInstance().getBuilder();
+        builder.begin(com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS,
+                com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_TEX_COLOR);
+        builder.vertex(matrix, left, bottom, 0.0F).uv(u0, vBottom).color(-1).endVertex();
+        builder.vertex(matrix, right, bottom, 0.0F).uv(u1, vBottom).color(-1).endVertex();
+        builder.vertex(matrix, right, top, 0.0F).uv(u1, vTop).color(-1).endVertex();
+        builder.vertex(matrix, left, top, 0.0F).uv(u0, vTop).color(-1).endVertex();
+        com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(builder.end());
     }
 
     private void drawMapOverlayGrid(GuiGraphics g, PadMapSnapshot map, PadMapProjection.Viewport viewport,

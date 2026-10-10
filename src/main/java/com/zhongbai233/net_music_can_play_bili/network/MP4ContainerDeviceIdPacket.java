@@ -1,7 +1,6 @@
 package com.zhongbai233.net_music_can_play_bili.network;
 
  import com.zhongbai233.net_music_can_play_bili.client.MP4Client;
-import com.zhongbai233.net_music_can_play_bili.client.MP4Client;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 

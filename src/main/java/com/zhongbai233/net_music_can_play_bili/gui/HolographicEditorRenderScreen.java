@@ -31,7 +31,7 @@ abstract class HolographicEditorRenderScreen extends HolographicConsoleInspector
     }
 
     @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics g) {
         g.fillGradient(0, 0, width, height, 0xD0000000, 0xE0050505);
     }
 

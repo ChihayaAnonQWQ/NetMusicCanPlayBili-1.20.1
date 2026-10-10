@@ -1,6 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.block;
 
-import com.mojang.serialization.MapCodec;
 import com.zhongbai233.net_music_can_play_bili.blockentity.VideoProjectorBlockEntity;
 import com.zhongbai233.net_music_can_play_bili.init.ModBlockEntities;
 import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
@@ -41,7 +40,6 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
      */
     public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
     public static final BooleanProperty ACTIVATED = BooleanProperty.create("activated");
-    private static final MapCodec<VideoProjectorBlock> CODEC = simpleCodec(VideoProjectorBlock::new);
     private static final VoxelShape SHAPE = Block.box(2.75, 0, 2.75, 13.25, 5.3, 13.25);
 
     public VideoProjectorBlock(Properties properties) {
@@ -51,10 +49,6 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
                 .setValue(ACTIVATED, false));
     }
 
-    @Override
-    protected MapCodec<VideoProjectorBlock> codec() {
-        return CODEC;
-    }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -69,12 +63,12 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
 
     /** 旋转/镜像时保持朝向语义（与原版熔炉等朝向方块一致）。 */
     @Override
-    protected BlockState rotate(BlockState state, Rotation rotation) {
+    public BlockState rotate(BlockState state, Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
     }
 
     @Override
-    protected BlockState mirror(BlockState state, Mirror mirror) {
+    public BlockState mirror(BlockState state, Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
@@ -84,13 +78,13 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, net.minecraft.core.BlockPos pos,
+    public VoxelShape getShape(BlockState state, BlockGetter level, net.minecraft.core.BlockPos pos,
             CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    protected RenderShape getRenderShape(BlockState state) {
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
     }
 
@@ -160,28 +154,39 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
     }
 
     /**
-     * 同步写入标准方块实体组件。MinecartRevolution 等通用方块载具会复制该组件，
+     * 同步写入标准方块实体数据。MinecartRevolution 等通用方块载具会复制该数据，
      * 因而无需依赖本模组的物品 CUSTOM_DATA 即可保留唱片机链接。
      *
-     * <p><b>必须补 id:</b>{@code BLOCK_ENTITY_DATA} 的持久化 codec 是
-     * {@code CustomData.CODEC_WITH_ID},要求 NBT 含字符串类型的 {@code id}(方块实体类型)。
-     * 从创造栏取出的新物品没有该组件,此时若直接写入就会得到一个"缺 id"的组件,
-     * 玩家背包保存(自动保存/退出世界)时抛
-     * {@code IllegalStateException: Missing id for entity in: {...}} 并使服务端崩溃。</p>
+     * <p><b>1.20.1 移植说明</b>：1.21.1 用数据组件 {@code DataComponents.BLOCK_ENTITY_DATA}
+     * （{@code CustomData}）承载这份数据；1.20.1 没有数据组件，其等价物是物品 NBT 里的
+     * {@code "BlockEntityTag"} 复合标签，也正是原版 {@code BlockItem#setBlockEntityData} /
+     * {@code BlockItem#getBlockEntityData} 读写的那一项。故本方法把三处组件调用逐一映射：
+     * {@code stack.get(DataComponents.BLOCK_ENTITY_DATA)} →
+     * {@code stack.getTagElement("BlockEntityTag")}（返回可空的 {@code CompoundTag}）；
+     * {@code stack.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(tag))} →
+     * {@code stack.getOrCreateTag().put("BlockEntityTag", tag)}；
+     * {@code stack.remove(DataComponents.BLOCK_ENTITY_DATA)} →
+     * {@code stack.removeTagKey("BlockEntityTag")}。</p>
+     *
+     * <p><b>必须补 id:</b>1.20.1 的 {@code BlockEntityTag} 同样要求 NBT 含字符串类型的
+     * {@code id}（方块实体类型），否则放置时方块实体无法确定类型。
+     * 从创造栏取出的新物品没有该数据，故这里手工补写。
+     * 未改用原版 {@code BlockItem#setBlockEntityData}：它内部调
+     * {@code BlockEntity#addEntityType} 无条件覆盖 id，会破坏"不覆盖别处写好的 id"这一约定。</p>
      */
     public static void writeLinkedBlockEntityData(ItemStack stack, BlockPos linkedPos) {
-        CustomData existing = stack.get(DataComponents.BLOCK_ENTITY_DATA);
+        CompoundTag existing = stack.getTagElement("BlockEntityTag");
         CompoundTag tag = existing != null ? existing.copy() : new CompoundTag();
         ensureBlockEntityId(tag);
         tag.putBoolean("LinkedTarget_has", true);
         tag.putInt("LinkedTarget_x", linkedPos.getX());
         tag.putInt("LinkedTarget_y", linkedPos.getY());
         tag.putInt("LinkedTarget_z", linkedPos.getZ());
-        stack.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(tag));
+        stack.getOrCreateTag().put("BlockEntityTag", tag);
     }
 
     /**
-     * 保证 {@code BLOCK_ENTITY_DATA} 携带方块实体类型 id。
+     * 保证 {@code BlockEntityTag} 携带方块实体类型 id。
      * 只在本模组投影仪自身的数据里补写,不会覆盖别处写好的 id。
      */
     private static void ensureBlockEntityId(CompoundTag tag) {
@@ -194,9 +199,9 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
         }
     }
 
-    /** 清除标准方块实体组件中的唱片机链接，同时保留投影参数等其它数据。 */
+    /** 清除标准方块实体数据（1.20.1：物品 NBT 的 {@code "BlockEntityTag"}）中的唱片机链接，同时保留投影参数等其它数据。 */
     public static void clearLinkedBlockEntityData(ItemStack stack) {
-        CustomData existing = stack.get(DataComponents.BLOCK_ENTITY_DATA);
+        CompoundTag existing = stack.getTagElement("BlockEntityTag");
         if (existing == null) {
             return;
         }
@@ -206,11 +211,11 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
         tag.remove("LinkedTarget_y");
         tag.remove("LinkedTarget_z");
         if (tag.isEmpty()) {
-            stack.remove(DataComponents.BLOCK_ENTITY_DATA);
+            stack.removeTagKey("BlockEntityTag");
             return;
         }
         ensureBlockEntityId(tag);
-        stack.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(tag));
+        stack.getOrCreateTag().put("BlockEntityTag", tag);
     }
 
     /**
@@ -223,7 +228,7 @@ public class VideoProjectorBlock extends Block implements EntityBlock {
      * {@code useWithoutItem} 的行为。</p>
      */
     @Override
-    protected InteractionResult use(BlockState state, Level level, BlockPos pos,
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hitResult) {
         ItemStack stack = player.getItemInHand(hand);
         if ((hand == InteractionHand.MAIN_HAND && stack.getItem() instanceof MediaManagementToolItem)

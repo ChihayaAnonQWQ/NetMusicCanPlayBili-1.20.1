@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 import java.util.List;
 
@@ -65,7 +65,7 @@ public class MediaToolReportScreen extends AbstractContainerScreen<MediaToolRepo
         if (selectedIndex < 0 || selectedIndex >= sources.size()) {
             return;
         }
-        PacketDistributor.sendToServer(new MediaToolReportPacket(sources.get(selectedIndex).key()));
+        NcpbNetworkDispatch.sendToServer(new MediaToolReportPacket(sources.get(selectedIndex).key()));
     }
 
     /** 1.21.1:面板绘制进 renderBg(替代 26.x extractBackground/extractRenderState 拆分)。 */

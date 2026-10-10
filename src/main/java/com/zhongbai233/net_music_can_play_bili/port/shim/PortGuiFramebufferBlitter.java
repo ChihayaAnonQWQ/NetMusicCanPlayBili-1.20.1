@@ -35,14 +35,17 @@ public final class PortGuiFramebufferBlitter {
         float y1 = y;
         float x2 = x + (float) width;
         float y2 = y + (float) height;
-        BufferBuilder builder = Tesselator.getInstance()
-                .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        // 1.20.1：Tesselator#begin(...) 不存在，改为 getBuilder() + 对同一 builder begin(...)；
+        // buildOrThrow() 不存在，等价物是 end()。
+        BufferBuilder builder = Tesselator.getInstance().getBuilder();
+        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         // v flipped: dest top-left samples the framebuffer's top row (v=1), bottom-left its bottom row (v=0).
-        builder.addVertex(matrix, x1, y1, 0.0F).setUv(0.0F, 1.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        builder.addVertex(matrix, x1, y2, 0.0F).setUv(0.0F, 0.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        builder.addVertex(matrix, x2, y2, 0.0F).setUv(1.0F, 0.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        builder.addVertex(matrix, x2, y1, 0.0F).setUv(1.0F, 1.0F).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        BufferUploader.drawWithShader(builder.buildOrThrow());
+        // 顶点链按 1.20.1 名称重写并补显式 endVertex()。
+        builder.vertex(matrix, x1, y1, 0.0F).uv(0.0F, 1.0F).color(1.0F, 1.0F, 1.0F, 1.0F).endVertex();
+        builder.vertex(matrix, x1, y2, 0.0F).uv(0.0F, 0.0F).color(1.0F, 1.0F, 1.0F, 1.0F).endVertex();
+        builder.vertex(matrix, x2, y2, 0.0F).uv(1.0F, 0.0F).color(1.0F, 1.0F, 1.0F, 1.0F).endVertex();
+        builder.vertex(matrix, x2, y1, 0.0F).uv(1.0F, 1.0F).color(1.0F, 1.0F, 1.0F, 1.0F).endVertex();
+        BufferUploader.drawWithShader(builder.end());
         RenderSystem.disableBlend();
     }
 }

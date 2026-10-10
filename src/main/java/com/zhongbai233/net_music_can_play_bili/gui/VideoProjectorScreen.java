@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.gui;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.blockentity.ModernTurntableBlockEntity;
@@ -128,7 +128,7 @@ public class VideoProjectorScreen extends BlackGoldScreen {
 
     private void sendConfigToServer(VideoProjectorBlockEntity be) {
         if (minecraft != null && minecraft.getConnection() != null) {
-            PacketDistributor.sendToServer(new VideoProjectorConfigPacket(
+            NcpbNetworkDispatch.sendToServer(new VideoProjectorConfigPacket(
                     blockPos,
                     be.getProjectionYaw(), be.getProjectionPitch(), be.getProjectionScale(),
                     be.getProjectionHeight(), be.getProjectionDistanceX(), be.getProjectionDistanceZ(),

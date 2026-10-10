@@ -21,7 +21,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 
@@ -82,8 +82,8 @@ public class PadFocusScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        updateHover(mouseX, mouseY);
+    public void renderBackground(GuiGraphics graphics) {
+        // 1.20.1：renderBackground 不再接收鼠标坐标；hover 已在本类 render(...) 中更新。
     }
 
     @Override
@@ -167,7 +167,7 @@ public class PadFocusScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         updateHover((int) mouseX, (int) mouseY);
         return true;
     }
@@ -344,7 +344,7 @@ public class PadFocusScreen extends Screen {
             return;
         }
         writeDocument(stack, document.withLocked(false));
-        PacketDistributor.sendToServer(new PadPublishPacket(deviceId));
+        NcpbNetworkDispatch.sendToServer(new PadPublishPacket(deviceId));
         PadFocusState.selectPoint(null);
         PadFocusState.endMediaDrag();
         PadFocusState.endPointDrag();
@@ -521,7 +521,7 @@ public class PadFocusScreen extends Screen {
         if (deviceId == null) {
             return;
         }
-        PacketDistributor.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.START,
+        NcpbNetworkDispatch.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.START,
                 deviceId, point.pointId(), 0L));
         PadFocusState.selectPoint(point.pointId());
     }
@@ -533,7 +533,7 @@ public class PadFocusScreen extends Screen {
             return;
         }
         PadFocusState.clearPausedPlayback();
-        PacketDistributor.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.STOP,
+        NcpbNetworkDispatch.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.STOP,
                 deviceId, null, ClientMediaPlayback.elapsedMillis(deviceId)));
     }
 
@@ -548,7 +548,7 @@ public class PadFocusScreen extends Screen {
             PadFocusState.rememberPausedPlayback(pointId, elapsedMillis,
                     ClientMediaPlayback.durationMillis(deviceId), MP4HandheldVideoClient.latestFrame(deviceId) != null);
         }
-        PacketDistributor.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.PAUSE,
+        NcpbNetworkDispatch.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.PAUSE,
                 deviceId, null, elapsedMillis));
     }
 
@@ -565,7 +565,7 @@ public class PadFocusScreen extends Screen {
         if (pointId == null) {
             return;
         }
-        PacketDistributor.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.START,
+        NcpbNetworkDispatch.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.START,
                 deviceId, pointId, PadFocusState.pausedElapsedMillis()));
         PadFocusState.clearPausedPlayback();
     }
@@ -583,7 +583,7 @@ public class PadFocusScreen extends Screen {
             }
             return;
         }
-        PacketDistributor.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.SEEK,
+        NcpbNetworkDispatch.sendToServer(new PadPlaybackControlPacket(PadPlaybackControlPacket.Action.SEEK,
                 deviceId, null, Math.max(0L, targetMillis)));
     }
 

@@ -335,7 +335,15 @@ public class LyricProjectorRenderer
         return (aa << 24) | (ar << 16) | (ag << 8) | ab;
     }
 
-    @Override
+    /**
+     * BER 裁剪包围盒。
+     *
+     * <p><b>1.20.1 移植未接线</b>：1.21 的 Forge 把该钩子放在 {@code IForgeBlockEntityRenderer}
+     * 上（所以 {@code @Override} 成立），1.20.1 的 {@code BlockEntityRenderer} 接口没有它
+     * （javap 已确证），对应钩子是 {@code IForgeBlockEntity#getRenderBoundingBox()}，
+     * 挂在 BlockEntity 上。真正接线需要改 {@code blockentity/LyricProjectorBlockEntity}
+     * （不在本次写入范围），这里先去掉 {@code @Override} 保留计算逻辑。</p>
+     */
     public AABB getRenderBoundingBox(LyricProjectorBlockEntity blockEntity) {
         double scale = Math.max(0.25D, Math.abs(blockEntity.getProjectionScale()));
         double textHalfWidth = RENDER_BOUNDS.maxTextWidth() * scale * 0.5D;

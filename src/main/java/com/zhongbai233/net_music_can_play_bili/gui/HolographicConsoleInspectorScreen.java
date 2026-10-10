@@ -3,7 +3,7 @@ package com.zhongbai233.net_music_can_play_bili.gui;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 import org.joml.Vector3d;
 
 import com.zhongbai233.net_music_can_play_bili.editor.host.controlconsole.document.ControlConsoleDocument;
@@ -367,7 +367,7 @@ abstract class HolographicConsoleInspectorScreen extends HolographicEditorLifecy
             consoleSaveStatus = "编辑租约不可用";
             return;
         }
-        PacketDistributor.sendToServer(new ControlConsoleAccessPacket(controlConsolePos, leaseId, operationId,
+        NcpbNetworkDispatch.sendToServer(new ControlConsoleAccessPacket(controlConsolePos, leaseId, operationId,
                 consoleDraft.revision(), consoleAccessModeDraft, trusted));
     }
 

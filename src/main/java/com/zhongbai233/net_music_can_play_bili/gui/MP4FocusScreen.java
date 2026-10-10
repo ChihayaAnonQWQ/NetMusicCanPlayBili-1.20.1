@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.gui;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.client.MP4BiliLoginOverlay;
@@ -64,8 +64,8 @@ public class MP4FocusScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        updateHover(mouseX, mouseY);
+    public void renderBackground(GuiGraphics graphics) {
+        // 1.20.1：renderBackground 不再接收鼠标坐标；hover 已在本类 render(...) 中更新。
     }
 
     @Override
@@ -130,7 +130,7 @@ public class MP4FocusScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         updateHover((int) mouseX, (int) mouseY);
         TexturePoint point = toTexturePoint((int) mouseX, (int) mouseY);
         if (point != null && MP4TextureHitTest.hit(point) == MP4TextureHit.VOLUME) {
@@ -374,13 +374,13 @@ public class MP4FocusScreen extends Screen {
                             minecraft.player.getItemInHand(MP4FocusState.hand()))
                     : null;
             if (deviceId == null) {
-                PacketDistributor.sendToServer(
+                NcpbNetworkDispatch.sendToServer(
                         new com.zhongbai233.net_music_can_play_bili.network.MP4EnsureDeviceIdPacket(
                                 MP4FocusState.hand()));
                 return;
             }
             MP4Client.cacheFocusedState(deviceId);
-            PacketDistributor.sendToServer(new MP4PlaybackControlPacket(action, MP4FocusState.selectedQueueIndex(),
+            NcpbNetworkDispatch.sendToServer(new MP4PlaybackControlPacket(action, MP4FocusState.selectedQueueIndex(),
                     Math.round(MP4FocusState.volume() * 1000.0F), Math.max(0L, targetMillis), deviceId));
         }
     }

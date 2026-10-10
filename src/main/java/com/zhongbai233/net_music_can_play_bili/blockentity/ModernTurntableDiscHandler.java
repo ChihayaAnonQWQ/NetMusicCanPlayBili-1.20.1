@@ -63,7 +63,8 @@ final class ModernTurntableDiscHandler extends ItemStackHandler {
         ItemStack previous = stackGetter.get();
         int limit = getSlotLimit(slot);
         if (!previous.isEmpty()) {
-            if (!ItemStack.isSameItemSameComponents(stack, previous)) {
+            // 1.20.1 无数据组件：isSameItemSameComponents 的等价物是 isSameItemSameTags。
+            if (!ItemStack.isSameItemSameTags(stack, previous)) {
                 return stack;
             }
             limit -= previous.getCount();

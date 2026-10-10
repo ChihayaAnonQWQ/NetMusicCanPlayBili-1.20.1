@@ -11,7 +11,6 @@ import com.zhongbai233.net_music_can_play_bili.network.MP4PlaybackSyncManager;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -115,8 +114,9 @@ public class MP4Item extends Item {
             return existing;
         }
         UUID created = UUID.randomUUID();
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> tag.putString(DATA_DEVICE_ID, created.toString())));
+        // 1.20.1：CUSTOM_DATA 组件即物品自身 NBT（stack.getOrCreateTag()），
+        // 1.21.1 的 stack.update(..., cd -> cd.update(tag -> tag.putString(...))) 等价于直接 putString。
+        stack.getOrCreateTag().putString(DATA_DEVICE_ID, created.toString());
         return created;
     }
 
@@ -124,8 +124,8 @@ public class MP4Item extends Item {
         if (stack.isEmpty() || !(stack.getItem() instanceof MP4Item) || deviceId == null) {
             return;
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> tag.putString(DATA_DEVICE_ID, deviceId.toString())));
+        // 1.20.1：同 getOrCreateDeviceId，CUSTOM_DATA 即物品自身 NBT。
+        stack.getOrCreateTag().putString(DATA_DEVICE_ID, deviceId.toString());
     }
 
     private static ItemStack findInInventory(Player player, boolean preferPlaying) {
@@ -248,12 +248,14 @@ public class MP4Item extends Item {
             if (!(entry instanceof CompoundTag compound)) {
                 continue;
             }
+            // 1.20.1 没有 ItemStack.OPTIONAL_CODEC（1.20.5+ 数据组件序列化），
+            // 等价物是原版 NBT 读写：ItemStack.of(tag)，解析失败返回 ItemStack.EMPTY。
             Tag stackTag = compound.get(DATA_QUEUE_STACK);
-            if (stackTag != null) {
-                ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, stackTag)
-                        .result()
-                        .filter(MP4Item::isNetMusicDisc)
-                        .ifPresent(itemStack -> result.add(BiliSongInfoSanitizer.sanitizeDisc(itemStack)));
+            if (stackTag instanceof CompoundTag stackCompound) {
+                ItemStack itemStack = ItemStack.of(stackCompound);
+                if (isNetMusicDisc(itemStack)) {
+                    result.add(BiliSongInfoSanitizer.sanitizeDisc(itemStack));
+                }
             }
             if (result.size() >= MAX_QUEUE_SIZE) {
                 break;
@@ -319,16 +321,13 @@ public class MP4Item extends Item {
             }
             CompoundTag entry = new CompoundTag();
             ItemStack sanitized = BiliSongInfoSanitizer.sanitizeDisc(disc);
-            ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, sanitized)
-                    .resultOrPartial(error -> {
-                    })
-                    .ifPresent(encoded -> entry.put(DATA_QUEUE_STACK, encoded));
+            // 1.20.1：ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, stack) 的等价物是
+            // ItemStack#save(CompoundTag)；编码结构随之为 1.20.1 的 "id"/"Count"/"tag" 布局。
+            entry.put(DATA_QUEUE_STACK, sanitized.save(new CompoundTag()));
             listTag.add(entry);
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                existing -> existing.update(tag -> {
-                    tag.put(DATA_QUEUE, listTag);
-                }));
+        // 1.20.1：CUSTOM_DATA 即物品自身 NBT，直接 put。
+        stack.getOrCreateTag().put(DATA_QUEUE, listTag);
     }
 
     private static void syncQueueCopy(Player player, ItemStack mp4Stack) {

@@ -123,6 +123,38 @@ tasks.withType(JavaCompile).configureEach {
     // 移植期一次暴露全部编译错误，避免反复往返。
     options.compilerArgs += ['-Xmaxerrs', '20000', '-Xlint:none']
 
+    // ★★★ 让 Mixin 注解处理器真正产出 refmap（缺这些 -A 参数它一个字节都不写）★★★
+    //
+    // 依据（对 mixin-0.8.5-processor 反汇编实证，2026-10-10）：
+    //   * ReferenceManager.write() 的头两条指令是
+    //       getfield outRefMapFileName; ifnonnull 8; return
+    //     而 outRefMapFileName 只来自处理器参数 `-AoutRefMapFile` —— 不传就**直接 return**。
+    //   * ObfuscationServiceFG3 / ObfuscationServiceMCP 只有在 `-AmappingTypes` 含 `tsrg` 时
+    //     才注册 `searge` 混淆环境，映射取自 `-AreobfTsrgFile` / `-AreobfTsrgFiles`。
+    //   * 只加 `annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'` 是**不够**的
+    //     （ForgeGradle 6 不会自动补这些 -A 参数；工程里也没有 MixinGradle 插件）。
+    //
+    // 为什么非有不可：**Forge 1.20.1 的生产运行时用 SRG 名**（方法 m_xxxxx_、字段 f_xxxxx_），
+    // 只有开发环境是官方名。所以凡「注入/访问 MC 类成员」的 mixin
+    // （ScreenAccessor、ButtonAccessor、SoundEngineAccessor、SoundManagerAccessor、
+    //   LibraryAccessor、AbstractContainerScreenMixin、ClientPacketListenerBlockUpdateMixin、
+    //   EntityTurnRoamingMixin、GuiRoamingCrosshairMixin、ItemInHandRendererMixin、
+    //   KeyboardHandlerRoamingMixin，以及三处注入 Screen#init 的 remap = true）
+    // 都必须靠 refmap 把官方名映射到 SRG 名，否则**开发环境通过、玩家实机失效**。
+    //
+    // 输出文件名取 Mixin 的默认约定 mixin.refmap.json
+    // （MixinConfig 在配置里没有 refmap 字段时用的默认名就是它）；
+    // mixins.json 里也显式写了 "refmap": "mixin.refmap.json"，避免歧义。
+    // 该文件落在 build/tmp/compileJava/ 下，已被下方 jar 块的 from(...) 收录。
+    def mixinTsrg = file("${buildDir}/createMcpToSrg/output.tsrg")
+    dependsOn tasks.matching { it.name == 'createMcpToSrg' }
+    options.compilerArgs += [
+            '-AoutRefMapFile=' + file("${buildDir}/tmp/compileJava/mixin.refmap.json").absolutePath,
+            '-AdefaultObfuscationEnv=searge',
+            '-AmappingTypes=tsrg',
+            '-AreobfTsrgFile=' + mixinTsrg.absolutePath
+    ]
+
     // ★ 必须锁定 Java 17 字节码 ★
     // 工具链是 JDK 21（见上方 java.toolchain 的说明：Temurin 17 在低完整性工作区会误判只读），
     // 但 **Minecraft 1.20.1 + Forge 运行在 Java 17 上**。

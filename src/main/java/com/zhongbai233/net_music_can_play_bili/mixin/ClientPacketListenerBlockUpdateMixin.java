@@ -22,7 +22,7 @@ public abstract class ClientPacketListenerBlockUpdateMixin {
     @Shadow
     private ClientLevel level;
 
-    @Inject(method = "handleBlockUpdate", at = @At("TAIL"), remap = false)
+    @Inject(method = "handleBlockUpdate", at = @At("TAIL"))
     private void net_music_can_play_bili$markSingleBlockDirty(ClientboundBlockUpdatePacket packet, CallbackInfo ci) {
         BlockPos pos = packet.getPos();
         if (net_music_can_play_bili$isLoaded(pos.getX(), pos.getZ())) {
@@ -31,7 +31,7 @@ public abstract class ClientPacketListenerBlockUpdateMixin {
         }
     }
 
-    @Inject(method = "handleChunkBlocksUpdate", at = @At("TAIL"), remap = false)
+    @Inject(method = "handleChunkBlocksUpdate", at = @At("TAIL"))
     private void net_music_can_play_bili$markSectionBlocksDirty(ClientboundSectionBlocksUpdatePacket packet,
             CallbackInfo ci) {
         packet.runUpdates((pos, state) -> {

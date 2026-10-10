@@ -44,7 +44,8 @@ public final class HolographicGlassesAbility {
         Attribute glassesAttribute = ModAttributes.HOLOGRAPHIC_GLASSES.get();
         Multimap<Attribute, AttributeModifier> modifiers = stack.getAttributeModifiers(EquipmentSlot.HEAD);
         for (var entry : modifiers.entries()) {
-            if (entry.getKey() == glassesAttribute && entry.getValue().amount() > 0.0D) {
+            // 1.20.1：AttributeModifier 只有 getAmount()，1.21.1 的 record 风格 amount() 不存在。
+            if (entry.getKey() == glassesAttribute && entry.getValue().getAmount() > 0.0D) {
                 return true;
             }
         }

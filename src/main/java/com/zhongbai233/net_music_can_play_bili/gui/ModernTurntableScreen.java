@@ -11,7 +11,7 @@ import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 /**
  * 现代唱片机 GUI — 黑金配色 + 频谱可视化 + 音频格式显示
@@ -123,7 +123,7 @@ public class ModernTurntableScreen extends BlackGoldScreen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        this.renderBackground(g, mx, my, pt);
+        this.renderBackground(g);
         int bx = boxX(), by = boxY();
         var t = turntable();
 
@@ -343,7 +343,7 @@ public class ModernTurntableScreen extends BlackGoldScreen {
 
     private void send(ModernTurntableControlPacket.Action action, long targetMillis) {
         if (Minecraft.getInstance().getConnection() != null)
-            PacketDistributor.sendToServer(
+            NcpbNetworkDispatch.sendToServer(
                     new ModernTurntableControlPacket(blockPos, action, Math.max(0L, targetMillis)));
     }
 
@@ -384,8 +384,10 @@ public class ModernTurntableScreen extends BlackGoldScreen {
     private static String getFormatLabel() {
         try {
             var diag = BiliPlaybackDiagnostics.describeCurrentPlayback();
-            if (diag instanceof java.util.List<?> lines && !lines.isEmpty()) {
-                for (Object line : lines) {
+            // Java 17 不支持「无条件」的 instanceof 模式：describeCurrentPlayback() 已声明返回 List<String>，
+            // 该模式恒为真，因此改为直接判空后遍历。
+            if (diag != null && !diag.isEmpty()) {
+                for (Object line : diag) {
                     String s = line.toString();
                     if (s.startsWith("容器/编码: ")) {
                         String codec = s.substring(s.indexOf(": ") + 2);

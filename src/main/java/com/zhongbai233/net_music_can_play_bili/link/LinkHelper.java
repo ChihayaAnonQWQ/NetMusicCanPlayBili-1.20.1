@@ -12,7 +12,8 @@ import javax.annotation.Nullable;
  * 方块链接的通用工具方法。
  * 支持两种存储方式：
  * <ul>
- * <li>物品 NBT（{@link DataComponents#CUSTOM_DATA}）：手持链接物品时创建链接</li>
+ * <li>物品 NBT（1.21.1 的 {@code DataComponents.CUSTOM_DATA} 组件；1.20.1 无数据组件，
+ * 就是 {@link ItemStack#getTag()} 本身）：手持链接物品时创建链接</li>
  * <li>方块实体 NBT（{@link CompoundTag}）：方块放置后持久化</li>
  * </ul>
  */
@@ -38,7 +39,7 @@ public final class LinkHelper {
 
     // ──── 物品 NBT 操作 ────
 
-    /** 将目标位置写入物品，并添加附魔光效 */
+    /** 将目标位置写入物品（1.21.1 还会在此添加附魔光效，1.20.1 无对应数据组件，详见方法内注释） */
     public static void writeLinkToItem(ItemStack stack, BlockPos targetPos) {
         CompoundTag tag = new CompoundTag();
         tag.putInt(LINK_X, targetPos.getX());
@@ -92,20 +93,28 @@ public final class LinkHelper {
                 tag.getInt(LINK_Z));
     }
 
-    /** 清除物品上的链接数据和光效 */
+    /**
+     * 清除物品上的链接数据（附魔光效见 {@link #writeLinkToItem} 的说明）。
+     *
+     * <p><b>1.20.1 移植说明</b>：{@code CUSTOM_DATA} 组件在 1.20.1 就是物品自身的
+     * {@link CompoundTag}，故 1.21.1 的
+     * {@code stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), cd -> cd.update(...))}
+     * 直接改写为「就地 remove 各键」；{@code stack.remove(DataComponents.CUSTOM_DATA)}
+     * 对应 {@code stack.setTag(null)}（空 tag 与无 tag 序列化等价）。
+     * {@code DataComponents.ENCHANTMENT_GLINT_OVERRIDE}（1.20.5+）在 1.20.1 没有对应物，不处理。</p>
+     */
     public static void clearLinkFromItem(ItemStack stack) {
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), existing -> existing.update(tag -> {
+        CompoundTag tag = stack.getTag();
+        if (tag != null) {
             tag.remove(LINK_X);
             tag.remove(LINK_Y);
             tag.remove(LINK_Z);
             tag.remove(LINK_DIMENSION);
             tag.remove(LINK_SOURCE_KIND);
-        }));
-        CompoundTag remaining = stack.getTag();
-        if (remaining != null && remaining.isEmpty()) {
-            stack.remove(DataComponents.CUSTOM_DATA);
+            if (tag.isEmpty()) {
+                stack.setTag(null);
+            }
         }
-        stack.remove(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
     }
 
     // ──── 方块实体 NBT 操作 ────

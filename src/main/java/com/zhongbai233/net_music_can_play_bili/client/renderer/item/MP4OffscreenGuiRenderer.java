@@ -119,8 +119,9 @@ final class MP4OffscreenGuiRenderer implements AutoCloseable {
         Minecraft minecraft = Minecraft.getInstance();
 
         RenderSystem.backupProjectionMatrix();
-        RenderSystem.getModelViewStack().pushMatrix();
-        RenderSystem.getModelViewStack().identity();
+        // 1.20.1：ModelViewStack 是 PoseStack，方法名为 pushPose()/setIdentity()/popPose()。
+        RenderSystem.getModelViewStack().pushPose();
+        RenderSystem.getModelViewStack().setIdentity();
         RenderSystem.applyModelViewMatrix();
         RenderSystem.enableBlend();
         target.bindWrite(true);
@@ -147,7 +148,7 @@ final class MP4OffscreenGuiRenderer implements AutoCloseable {
             target.unbindWrite();
             minecraft.getMainRenderTarget().bindWrite(true);
             RenderSystem.restoreProjectionMatrix();
-            RenderSystem.getModelViewStack().popMatrix();
+            RenderSystem.getModelViewStack().popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.disableBlend();
         }

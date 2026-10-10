@@ -355,10 +355,12 @@ public final class ControlConsoleRoamingSession {
                     PortDebugRenderTypes.translucentLines(entry.getKey()),
                     (pose, buffer) -> {
                         for (DebugLine debugLine : group) {
-                            buffer.addVertex(pose, debugLine.x1, debugLine.y1, debugLine.z1)
-                                    .setColor(debugLine.color).setNormal(0.0F, 1.0F, 0.0F);
-                            buffer.addVertex(pose, debugLine.x2, debugLine.y2, debugLine.z2)
-                                    .setColor(debugLine.color).setNormal(0.0F, 1.0F, 0.0F);
+                            // 1.20.1 的 VertexConsumer 没有 addVertex(Pose,...)/setColor/setNormal（那是 1.21 的 API）：
+                            // 等价写法为 vertex(Matrix4f,...) + color(int) + normal(...)，且必须显式 endVertex()。
+                            buffer.vertex(pose.pose(), debugLine.x1, debugLine.y1, debugLine.z1)
+                                    .color(debugLine.color).normal(0.0F, 1.0F, 0.0F).endVertex();
+                            buffer.vertex(pose.pose(), debugLine.x2, debugLine.y2, debugLine.z2)
+                                    .color(debugLine.color).normal(0.0F, 1.0F, 0.0F).endVertex();
                         }
                     });
         }

@@ -15,7 +15,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
-import org.joml.Matrix4fStack;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.joml.Vector3fc;
@@ -36,11 +35,20 @@ abstract class VideoBillboardQuadSupport extends VideoBillboardState {
 
     protected static void drawWithEventModelView(RenderType renderType, BufferBuilder.RenderedBuffer mesh,
             RenderLevelStageEvent event) {
-        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
-        modelViewStack.pushMatrix();
+        // 1.20.1：RenderSystem.getModelViewStack() 返回 PoseStack（1.21 才是 Matrix4fStack），
+        // 对应方法是 pushPose()/setIdentity()/popPose()，乘矩阵用 mulPoseMatrix(Matrix4f)。
+        // 另外 1.20.1 里真正供 shader 取用的 ModelViewMat 是 RenderSystem.getModelViewMatrix()
+        // （BufferUploader#drawWithShader 读的就是它），所以改完栈必须 applyModelViewMatrix()
+        // 才会生效（1.21 的 Matrix4fStack 是同一份数据，不需要这一步）。
+        // 1.20.1 的 RenderLevelStageEvent 也没有 getModelViewMatrix()：事件携带的是当时的
+        // PoseStack，其 last().pose() 就是该阶段的视图矩阵，与 1.21 的 getModelViewMatrix() 同义。
+        PoseStack modelViewStack = RenderSystem.getModelViewStack();
+        modelViewStack.pushPose();
         try {
             // 绘制使用当前模型视图矩阵；这里切到事件提供的世界矩阵，避免相机相对顶点漂移。
-            modelViewStack.set(event.getModelViewMatrix());
+            modelViewStack.setIdentity();
+            modelViewStack.mulPoseMatrix(event.getPoseStack().last().pose());
+            RenderSystem.applyModelViewMatrix();
             // 1.20.1 的 RenderType 没有 draw(MeshData)（那是 1.21 才有的），
             // 等价写法就是它内部做的事：setupRenderState() + BufferUploader + clearRenderState()。
             renderType.setupRenderState();
@@ -50,7 +58,8 @@ abstract class VideoBillboardQuadSupport extends VideoBillboardState {
                 renderType.clearRenderState();
             }
         } finally {
-            modelViewStack.popMatrix();
+            modelViewStack.popPose();
+            RenderSystem.applyModelViewMatrix();
         }
     }
 

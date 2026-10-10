@@ -585,12 +585,16 @@ public final class MP4ItemScreenRenderer {
     }
 
     private static void solidVertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, float z, int color) {
-        buffer.addVertex(pose, x, y, z)
-                .setColor(color)
-                .setUv(0.01F, 0.01F)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(FULL_BRIGHT)
-                .setNormal(pose, 0.0F, 0.0F, 1.0F);
+        // 1.20.1 顶点链：addVertex(Pose,..)->vertex(pose.pose(),..)、setColor->color、setUv->uv、
+        // setOverlay->overlayCoords、setLight->uv2、setNormal(Pose,..)->normal(pose.normal(),..)，
+        // 并补上 1.21 不需要、1.20.1 必须的显式 endVertex()。
+        buffer.vertex(pose.pose(), x, y, z)
+                .color(color)
+                .uv(0.01F, 0.01F)
+                .overlayCoords(OverlayTexture.NO_OVERLAY)
+                .uv2(FULL_BRIGHT)
+                .normal(pose.normal(), 0.0F, 0.0F, 1.0F)
+                .endVertex();
     }
 
     private static int darker(int color) {

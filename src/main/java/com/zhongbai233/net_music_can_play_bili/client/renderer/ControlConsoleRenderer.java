@@ -51,7 +51,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraftforge.network.PacketDistributor;
+// 1.20.1：PacketDistributor 没有静态便捷方法 sendToServer（那是不存在的 NeoForge API），
+// 客户端→服务端统一走本工程的 SimpleChannel 封装。
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 import com.zhongbai233.net_music_can_play_bili.util.MathCompat;
 
@@ -171,7 +173,8 @@ public final class ControlConsoleRenderer
             float halfWidth = halfHeight * element.aspect();
             poseStack.pushPose();
             poseStack.translate(0.5D, 1.55D, 0.5D);
-            poseStack.mulPose(element.editorTransform().matrix());
+            // 1.20.1：PoseStack 没有 mulPose(Matrix4f)（1.21 新增），乘矩阵用 mulPoseMatrix(Matrix4f)。
+            poseStack.mulPoseMatrix(element.editorTransform().matrix());
             Matrix4f pose = new Matrix4f(poseStack.last().pose());
             if (element.type() == ControlConsoleElement.Type.SCREEN) {
                 boolean screenPotentiallyVisible = VideoBillboardPreview
@@ -369,7 +372,17 @@ public final class ControlConsoleRenderer
         }
     }
 
-    @Override
+    /**
+     * BER 裁剪包围盒。
+     *
+     * <p><b>1.20.1 移植未接线</b>：1.21 的 Forge 把它放在
+     * {@code IForgeBlockEntityRenderer#getRenderBoundingBox(T)} 上，所以这里 {@code @Override} 成立；
+     * 1.20.1 的 {@code BlockEntityRenderer} 接口<b>没有</b>这个方法（javap 已确证），
+     * 对应钩子是 {@code IForgeBlockEntity#getRenderBoundingBox()}——挂在 <b>BlockEntity</b> 上。
+     * 也就是说真正的接线要改 {@code blockentity/ControlConsoleBlockEntity}（不在本次写入范围）。
+     * 这里先去掉 {@code @Override} 保留方法本体，逻辑与调用点（本类内部）不变；
+     * 该计算目前不会被原版裁剪使用，属于已知待接线项。</p>
+     */
     public AABB getRenderBoundingBox(ControlConsoleBlockEntity console) {
         ControlConsoleDocument document = console.document();
         BlockPos pos = console.getBlockPos();
@@ -543,7 +556,7 @@ public final class ControlConsoleRenderer
         if (result.consumerGeneration() != runtime.consumerGeneration) {
             if (result.status() == com.zhongbai233.net_music_can_play_bili.network
                     .ControlConsoleConsumerLeaseResultPacket.Status.GRANTED && result.leaseId() != null) {
-                PacketDistributor.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
+                NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
                         .ControlConsoleConsumerLeasePacket(result.pos(),
                                 com.zhongbai233.net_music_can_play_bili.network.ControlConsoleConsumerLeasePacket.Action.RELEASE,
                                 result.leaseId(), result.consumerGeneration()));
@@ -731,7 +744,7 @@ public final class ControlConsoleRenderer
         }
         long now = System.currentTimeMillis();
         if (now >= runtime.nextLeaseRequestMillis) {
-            PacketDistributor.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
+            NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
                     .ControlConsoleConsumerLeasePacket(consolePos,
                     com.zhongbai233.net_music_can_play_bili.network.ControlConsoleConsumerLeasePacket.Action
                             .ACQUIRE_OR_RENEW,
@@ -975,7 +988,7 @@ public final class ControlConsoleRenderer
 
     private static void releaseConsumerLease(BlockPos consolePos, ConsumerState runtime) {
         if (runtime.leaseId != null) {
-            PacketDistributor.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
+            NcpbNetworkDispatch.sendToServer(new com.zhongbai233.net_music_can_play_bili.network
                     .ControlConsoleConsumerLeasePacket(consolePos,
                     com.zhongbai233.net_music_can_play_bili.network.ControlConsoleConsumerLeasePacket.Action.RELEASE,
                     runtime.leaseId, runtime.consumerGeneration));

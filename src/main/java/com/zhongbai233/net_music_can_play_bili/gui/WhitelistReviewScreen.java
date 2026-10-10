@@ -10,7 +10,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 import java.util.List;
 import java.util.Objects;
@@ -359,13 +359,13 @@ public class WhitelistReviewScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
+    public void renderBackground(GuiGraphics g) {
         BlackGoldUi.drawBackground(g, width, height);
     }
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        this.renderBackground(g, mx, my, pt);
+        this.renderBackground(g);
         int bx = boxX();
         int by = boxY();
         BlackGoldUi.drawPanel(g, bx, by, boxWidth(), boxHeight());
@@ -615,18 +615,18 @@ public class WhitelistReviewScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         if (promptMode != PromptMode.NONE || pendingMode != PromptMode.NONE || pageRequestPending || !pendingPreviewTargetId.isBlank()) {
-            return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+            return super.mouseScrolled(mouseX, mouseY, scrollY);
         }
         int itemCount = historyTab ? removalRecords.size() : entries.size();
         if (itemCount <= visibleRows() || scrollY == 0.0D || !inList(mouseX, mouseY)) {
-            return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+            return super.mouseScrolled(mouseX, mouseY, scrollY);
         }
         int previousOffset = scrollOffset;
         scrollOffset += scrollY < 0.0D ? 1 : -1;
         clampScrollOffset();
-        return scrollOffset != previousOffset || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return scrollOffset != previousOffset || super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     private void removeSelected() {
@@ -653,12 +653,12 @@ public class WhitelistReviewScreen extends Screen {
         previewRequestStartedAt = System.currentTimeMillis();
         interactionStatus = "";
         rebuildButtons();
-        PacketDistributor.sendToServer(new WhitelistReviewActionPacket(
+        NcpbNetworkDispatch.sendToServer(new WhitelistReviewActionPacket(
                 WhitelistReviewActionPacket.Action.PREVIEW, entry.id(), 0L, pendingPreviewRequestId));
     }
 
     private void request(WhitelistReviewActionPacket.Action action, String value) {
-        PacketDistributor.sendToServer(new WhitelistReviewActionPacket(action, value));
+        NcpbNetworkDispatch.sendToServer(new WhitelistReviewActionPacket(action, value));
     }
 
     boolean acceptPreviewResponse(com.zhongbai233.net_music_can_play_bili.network.WhitelistPreviewPacket payload) {
@@ -706,7 +706,7 @@ public class WhitelistReviewScreen extends Screen {
     }
 
     private void requestPage(int nextEntryOffset, int nextRemovalOffset, long requestId) {
-        PacketDistributor.sendToServer(new WhitelistReviewActionPacket(
+        NcpbNetworkDispatch.sendToServer(new WhitelistReviewActionPacket(
                 WhitelistReviewActionPacket.Action.REFRESH, "", 0L, "", "",
                 Math.max(0, nextEntryOffset), Math.max(0, nextRemovalOffset), requestId));
     }
@@ -766,7 +766,7 @@ public class WhitelistReviewScreen extends Screen {
         requestStartedAt = System.currentTimeMillis();
         interactionStatus = "";
         rebuildButtons();
-        PacketDistributor.sendToServer(new WhitelistReviewActionPacket(action, promptTargetId,
+        NcpbNetworkDispatch.sendToServer(new WhitelistReviewActionPacket(action, promptTargetId,
                 0L, text, promptExpectedAddedAt, entryOffset(), removalOffset(), pendingRequestId));
     }
 

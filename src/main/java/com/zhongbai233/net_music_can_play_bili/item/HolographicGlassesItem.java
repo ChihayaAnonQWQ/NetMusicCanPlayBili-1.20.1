@@ -154,8 +154,11 @@ public class HolographicGlassesItem extends Item implements Equipable {
             return 0;
         }
         int count = readScreenBindings(stack).size();
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> tag.remove(DATA_MP4_SCREENS)));
+        // 1.20.1：CUSTOM_DATA 组件即物品自身 NBT。
+        CompoundTag tag = stack.getTag();
+        if (tag != null) {
+            tag.remove(DATA_MP4_SCREENS);
+        }
         return count;
     }
 
@@ -297,11 +300,12 @@ public class HolographicGlassesItem extends Item implements Equipable {
             writeConfig(entry, binding.config().clamped());
             list.add(entry);
         }
-        stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(),
-                customData -> customData.update(tag -> {
-                    tag.putInt(DATA_SCHEMA_VERSION, PERSISTENCE_SCHEMA_VERSION);
-                    tag.put(DATA_MP4_SCREENS, list);
-                }));
+        // 1.20.1：CUSTOM_DATA 组件即物品自身 NBT；1.21.1 的
+        // stack.update(DataComponents.CUSTOM_DATA, new CompoundTag(), cd -> cd.update(tag -> {...}))
+        // 等价于取 getOrCreateTag() 后就地写入。
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putInt(DATA_SCHEMA_VERSION, PERSISTENCE_SCHEMA_VERSION);
+        tag.put(DATA_MP4_SCREENS, list);
     }
 
     private static void writeConfig(CompoundTag tag, ScreenConfig config) {

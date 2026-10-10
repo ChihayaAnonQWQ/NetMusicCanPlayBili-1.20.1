@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.client;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.item.MP4Item;
@@ -70,7 +70,7 @@ public final class MP4AutoResumeClient {
         }
 
         lastResumeFingerprint = fingerprint;
-        PacketDistributor.sendToServer(new MP4PlaybackControlPacket(
+        NcpbNetworkDispatch.sendToServer(new MP4PlaybackControlPacket(
                 MP4PlaybackControlPacket.Action.START,
                 queueIndex,
                 state.volumePerMille(),

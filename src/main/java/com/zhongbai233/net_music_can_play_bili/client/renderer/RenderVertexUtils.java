@@ -38,11 +38,18 @@ public final class RenderVertexUtils {
      */
     public static void texturedVertex(VertexConsumer buffer, PoseStack.Pose pose, float x, float y, float z,
             float u, float v, float opacity, float brightness) {
-        buffer.addVertex(pose, x, y, z)
-                .setColor(VideoSurfaceBrightness.vertexColor(brightness, opacity))
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(FULL_BRIGHT)
-                .setNormal(0.0F, 1.0F, 0.0F);
+        // 1.20.1 的 VertexConsumer 没有 1.21 的 addVertex(...)/setXxx(...) 链式 API，等价映射为：
+        //   addVertex(Pose, x, y, z)   -> vertex(pose.pose(), x, y, z)   (1.21 的 addVertex(Pose,...) 就是它)
+        //   addVertex(Matrix4f, ...)   -> vertex(matrix, x, y, z)        (同为 default 方法, Vector4f.transform)
+        //   setColor -> color | setUv -> uv | setOverlay -> overlayCoords | setLight -> uv2 | setNormal -> normal
+        // 另外 1.20.1 必须显式 endVertex() 收尾：1.21 由下一次 addVertex 隐式结束顶点，
+        // 1.20.1 的 BufferBuilder 只在 endVertex() 里递增顶点计数（否则顶点数为 0，画不出东西）。
+        buffer.vertex(pose.pose(), x, y, z)
+                .color(VideoSurfaceBrightness.vertexColor(brightness, opacity))
+                .uv(u, v)
+                .overlayCoords(OverlayTexture.NO_OVERLAY)
+                .uv2(FULL_BRIGHT)
+                .normal(0.0F, 1.0F, 0.0F)
+                .endVertex();
     }
 }

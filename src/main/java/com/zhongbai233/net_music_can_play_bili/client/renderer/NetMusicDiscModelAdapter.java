@@ -62,7 +62,9 @@ final class NetMusicDiscModelAdapter {
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - facing.get2DDataValue() * 90.0F));
         poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutout(MusicPlayerRenderer.TEXTURE));
-        model.renderToBuffer(poseStack, consumer, lightCoords, OverlayTexture.NO_OVERLAY, -1);
+        // 1.20.1 的 Model#renderToBuffer 没有 1.21 的 packedColor 重载，
+        // 改为四个 float 通道；原来的 -1（ARGB 全 1）对应 1,1,1,1。
+        model.renderToBuffer(poseStack, consumer, lightCoords, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
         poseStack.popPose();
     }
 

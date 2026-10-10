@@ -26,12 +26,17 @@ public final class PortGuiTextures {
         RenderSystem.setShaderTexture(0, texture);
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
         Matrix4f matrix = g.pose().last().pose();
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS,
-                DefaultVertexFormat.POSITION_TEX_COLOR);
-        builder.addVertex(matrix, x0, y1, 0.0F).setUv(u0, v1).setColor(-1);
-        builder.addVertex(matrix, x1, y1, 0.0F).setUv(u1, v1).setColor(-1);
-        builder.addVertex(matrix, x1, y0, 0.0F).setUv(u1, v0).setColor(-1);
-        builder.addVertex(matrix, x0, y0, 0.0F).setUv(u0, v0).setColor(-1);
-        BufferUploader.drawWithShader(builder.buildOrThrow());
+        // 1.20.1：Tesselator 没有 begin(Mode, VertexFormat)（1.21 才有），
+        // 必须先 getBuilder() 再对同一个 builder 调一次 begin(...)；
+        // buildOrThrow() 在 1.20.1 不存在，等价物是 end()（返回相同语义的 RenderedBuffer）。
+        BufferBuilder builder = Tesselator.getInstance().getBuilder();
+        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        // 顶点链也改写为 1.20.1 名称：addVertex->vertex / setUv->uv / setColor->color，
+        // 并补上 1.20.1（1.21 已不需要）的显式 endVertex()。
+        builder.vertex(matrix, x0, y1, 0.0F).uv(u0, v1).color(-1).endVertex();
+        builder.vertex(matrix, x1, y1, 0.0F).uv(u1, v1).color(-1).endVertex();
+        builder.vertex(matrix, x1, y0, 0.0F).uv(u1, v0).color(-1).endVertex();
+        builder.vertex(matrix, x0, y0, 0.0F).uv(u0, v0).color(-1).endVertex();
+        BufferUploader.drawWithShader(builder.end());
     }
 }

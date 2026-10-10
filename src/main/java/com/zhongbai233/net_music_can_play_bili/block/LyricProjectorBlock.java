@@ -1,6 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.block;
 
-import com.mojang.serialization.MapCodec;
 import com.zhongbai233.net_music_can_play_bili.blockentity.LyricProjectorBlockEntity;
 import com.zhongbai233.net_music_can_play_bili.client.LyricProjectorClient;
 import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
@@ -39,7 +38,6 @@ public class LyricProjectorBlock extends Block implements EntityBlock {
     public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
     public static final BooleanProperty LINKED = BooleanProperty.create("linked");
     public static final BooleanProperty ACTIVATED = BooleanProperty.create("activated");
-    private static final MapCodec<LyricProjectorBlock> CODEC = simpleCodec(LyricProjectorBlock::new);
     private static final VoxelShape SHAPE = Block.box(2.75, 0, 2.75, 13.25, 5.3, 13.25);
 
     public LyricProjectorBlock(Properties properties) {
@@ -53,10 +51,6 @@ public class LyricProjectorBlock extends Block implements EntityBlock {
                 .setValue(ACTIVATED, false));
     }
 
-    @Override
-    protected MapCodec<LyricProjectorBlock> codec() {
-        return CODEC;
-    }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -69,12 +63,12 @@ public class LyricProjectorBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected BlockState rotate(BlockState state, Rotation rotation) {
+    public BlockState rotate(BlockState state, Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
     }
 
     @Override
-    protected BlockState mirror(BlockState state, Mirror mirror) {
+    public BlockState mirror(BlockState state, Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
@@ -84,12 +78,12 @@ public class LyricProjectorBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    protected RenderShape getRenderShape(BlockState state) {
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
     }
 
@@ -149,7 +143,7 @@ public class LyricProjectorBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
             InteractionHand hand, BlockHitResult hitResult) {
         if (!player.mayBuild()) {
             return InteractionResult.PASS;

@@ -1,6 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.block;
 
-import com.mojang.serialization.MapCodec;
 import com.zhongbai233.net_music_can_play_bili.blockentity.ControlConsoleBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -22,7 +21,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 /** 中控台方块；首版只提供放置、文档宿主和编辑入口，不启动媒体运行时。 */
 public final class ControlConsoleBlock extends Block implements EntityBlock {
-    private static final MapCodec<ControlConsoleBlock> CODEC = simpleCodec(ControlConsoleBlock::new);
     /** 覆盖 Blockbench 模型约 0..1.127 X、0..1.813 Y、0..0.986 Z 的完整选择范围。 */
     private static final VoxelShape SELECTION_SHAPE = Block.box(-1, 0, 0, 18, 29, 16);
     /** 只碰撞设备的主要承重结构，避免旋转薄板形成大量难以通过的空气盒。 */
@@ -36,10 +34,6 @@ public final class ControlConsoleBlock extends Block implements EntityBlock {
         super(properties.strength(2.5F).noOcclusion());
     }
 
-    @Override
-    protected MapCodec<? extends Block> codec() {
-        return CODEC;
-    }
 
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -93,7 +87,7 @@ public final class ControlConsoleBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, net.minecraft.world.level.BlockGetter level,
+    public VoxelShape getCollisionShape(BlockState state, net.minecraft.world.level.BlockGetter level,
             BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
         return COLLISION_SHAPE;
     }
@@ -105,7 +99,7 @@ public final class ControlConsoleBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
             InteractionHand hand, BlockHitResult hitResult) {
         if (!player.mayBuild()
                 && !player.createCommandSourceStack().hasPermission(2)) {
@@ -126,7 +120,7 @@ public final class ControlConsoleBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected RenderShape getRenderShape(BlockState state) {
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
     }
 }

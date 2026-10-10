@@ -21,7 +21,10 @@ public abstract class BigMegaphoneScreenMixin {
     @Shadow
     private EditBox urlTextField;
 
-    @Inject(method = "init", at = @At("TAIL"))
+    // remap = true 必须显式写：`init` 来自 MC 的 Screen（生产名 m_7856_），
+    // 而本 mixin 类级是 remap = false（目标是前置模组 NetMusic 的类），
+    // mixin 的类级 remap 会被成员继承（注解处理器字节码实证），不显式覆盖就不会生成 refmap 条目。
+    @Inject(method = "init", at = @At("TAIL"), remap = true)
     private void net_music_can_play_bili$hookButtons(CallbackInfo ci) {
         for (GuiEventListener child : ((Screen) (Object) this).children()) {
             if (child instanceof Button btn) {

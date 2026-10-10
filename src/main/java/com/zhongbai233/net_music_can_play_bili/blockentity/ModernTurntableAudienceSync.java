@@ -12,7 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -106,7 +106,8 @@ final class ModernTurntableAudienceSync {
                 endpoint.endpointId(), BlockPos.of(endpoint.endpointPos()), endpoint.channelIndex(),
                 endpoint.volume(), endpoint.autoMixJoc(), endpoint.maxDistance(), endpoint.revision(),
                 AreaControlAudioCompat.zoneAt(level, BlockPos.of(endpoint.endpointPos())))).toList();
-        PacketDistributor.sendToPlayer(player, new AudioEndpointSnapshotPacket(sourceId.value(), sourcePos,
+        // 1.20.1：NeoForge 的 PacketDistributor.sendToPlayer 静态便捷方法不存在，改用本工程封装。
+        NcpbNetworkDispatch.sendToPlayer(player, new AudioEndpointSnapshotPacket(sourceId.value(), sourcePos,
                 AreaControlAudioCompat.zoneAt(level, sourcePos),
                 update.generation(), update.reset(), update.subscribed(), upserts, update.removals()));
     }

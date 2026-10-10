@@ -3,7 +3,6 @@ package com.zhongbai233.net_music_can_play_bili.blockentity;
 import com.zhongbai233.net_music_can_play_bili.init.ModBlockEntities;
 import com.zhongbai233.net_music_can_play_bili.init.ModBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -271,8 +270,8 @@ public final class ControlConsoleBlockEntity extends SyncedBlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
-        super.saveAdditional(output, registries);
+    protected void saveAdditional(CompoundTag output) {
+        super.saveAdditional(output);
         output.putInt(SCHEMA_VERSION_TAG, loadedSchemaVersion);
         if (isDocumentReadOnly()) {
             if (preservedFutureDocument != null) {
@@ -358,8 +357,8 @@ public final class ControlConsoleBlockEntity extends SyncedBlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
-        super.loadAdditional(input, registries);
+    public void load(CompoundTag input) {
+        super.load(input);
         // 未知高版本只读保守处理：不按旧结构写回；当前骨架只读取受支持版本的 revision。
         int schemaVersion = getIntOr(input, SCHEMA_VERSION_TAG, 1);
         loadedSchemaVersion = schemaVersion;

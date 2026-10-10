@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 import org.joml.Quaternionf;
 import org.joml.Vector3d;
 
@@ -154,7 +154,7 @@ abstract class HolographicEditorLifecycleScreen extends HolographicEditorScreenS
             consoleSaveStatus = "编辑租约不可用";
             return;
         }
-        PacketDistributor.sendToServer(new ControlConsoleConfigPacket(controlConsolePos, leaseId, operationId,
+        NcpbNetworkDispatch.sendToServer(new ControlConsoleConfigPacket(controlConsolePos, leaseId, operationId,
                 consoleDraft.revision(), consoleDraft.displayName(), consoleDraft.hardRangeX(),
                 consoleDraft.hardRangeY(), consoleDraft.hardRangeZ(), consoleElementsSnapshot()));
     }
@@ -368,7 +368,7 @@ abstract class HolographicEditorLifecycleScreen extends HolographicEditorScreenS
         for (int i = 0; i < screens.size(); i++) {
             HolographicGlassesItem.ScreenConfig config = screens.get(i).toConfig();
             configs.add(config);
-            PacketDistributor.sendToServer(HolographicGlassesConfigPacket.fromConfig(i, config));
+            NcpbNetworkDispatch.sendToServer(HolographicGlassesConfigPacket.fromConfig(i, config));
         }
         HolographicGlassesItem.writeScreenConfigs(head, configs);
         player.sendSystemMessage(Component.literal("全息眼镜配置已保存（" + configs.size() + " 屏）"));

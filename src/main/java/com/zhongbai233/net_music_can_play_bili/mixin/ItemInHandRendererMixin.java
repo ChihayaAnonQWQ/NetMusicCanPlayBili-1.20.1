@@ -27,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
-    @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
     private void net_music_can_play_bili$renderMp4AsMap(AbstractClientPlayer player, float partialTick, float pitch,
             InteractionHand hand, float swingProgress, ItemStack stack, float equipProgress, PoseStack poseStack,
             MultiBufferSource bufferSource, int light, CallbackInfo ci) {
@@ -75,11 +75,13 @@ public abstract class ItemInHandRendererMixin {
         }
     }
 
-    @Invoker(value = "renderMapHand", remap = false)
+    // remap 用默认值（true）：目标是 MC 类 ItemInHandRenderer，生产名是 SRG（m_109361_），
+    // 必须靠 refmap 映射；写 remap = false 只会在开发环境通过、实机失效。
+    @Invoker(value = "renderMapHand")
     protected abstract void net_music_can_play_bili$renderMapHand(PoseStack poseStack, MultiBufferSource bufferSource,
             int light, HumanoidArm arm);
 
-    @Invoker(value = "renderPlayerArm", remap = false)
+    @Invoker(value = "renderPlayerArm")
     protected abstract void net_music_can_play_bili$renderPlayerArm(PoseStack poseStack, MultiBufferSource bufferSource,
             int light, float equipProgress, float swingProgress, HumanoidArm arm);
 

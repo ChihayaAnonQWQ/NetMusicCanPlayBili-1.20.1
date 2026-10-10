@@ -23,6 +23,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraftforge.network.NetworkHooks;
 
 import java.util.Comparator;
 import java.util.List;
@@ -116,7 +117,11 @@ public class MediaManagementToolItem extends Item {
     private static void openBindingMenu(ServerPlayer player, MediaToolBindingMenu.TargetKind targetKind,
             BlockPos targetPos,
             UUID mp4DeviceId) {
-        player.openMenu(new MediaToolMenuProvider(targetKind, targetPos, mp4DeviceId));
+        // 1.20.1：MenuProvider 没有 1.20.5+ 的 writeClientSideData；附加数据改由
+        // NetworkHooks.openScreen 的 extraDataWriter 写进开屏包，客户端 IContainerFactory 再读出
+        // （见 ModMenus.MEDIA_TOOL_BINDING，工厂构造读的就是 writeClientData 写的那段）。
+        NetworkHooks.openScreen(player, new MediaToolMenuProvider(targetKind, targetPos, mp4DeviceId),
+                buffer -> MediaToolBindingMenu.writeClientData(buffer, targetKind, targetPos, mp4DeviceId));
     }
 
     private static void openReportMenu(ServerPlayer player, List<ReportSourceInfo> sources) {
@@ -125,7 +130,9 @@ public class MediaManagementToolItem extends Item {
                     "message.net_music_can_play_bili.media_tool.no_active_source").withStyle(ChatFormatting.RED));
             return;
         }
-        player.openMenu(new MediaToolReportMenuProvider(sources));
+        // 1.20.1：同 openBindingMenu，附加数据经 NetworkHooks.openScreen 的 extraDataWriter 发送。
+        NetworkHooks.openScreen(player, new MediaToolReportMenuProvider(sources),
+                buffer -> MediaToolReportMenu.writeClientData(buffer, sources));
     }
 
     private record MediaToolMenuProvider(MediaToolBindingMenu.TargetKind targetKind, BlockPos targetPos,
@@ -141,12 +148,6 @@ public class MediaManagementToolItem extends Item {
                 net.minecraft.world.entity.player.Inventory inventory, Player player) {
             return new MediaToolBindingMenu(containerId, inventory, targetKind, targetPos, mp4DeviceId);
         }
-
-        @Override
-        public void writeClientSideData(net.minecraft.world.inventory.AbstractContainerMenu menu,
-                net.minecraft.network.FriendlyByteBuf buffer) {
-            MediaToolBindingMenu.writeClientData(buffer, targetKind, targetPos, mp4DeviceId);
-        }
     }
 
     private record MediaToolReportMenuProvider(List<ReportSourceInfo> sources)
@@ -160,12 +161,6 @@ public class MediaManagementToolItem extends Item {
         public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int containerId,
                 net.minecraft.world.entity.player.Inventory inventory, Player player) {
             return new MediaToolReportMenu(containerId, inventory, sources);
-        }
-
-        @Override
-        public void writeClientSideData(net.minecraft.world.inventory.AbstractContainerMenu menu,
-                net.minecraft.network.FriendlyByteBuf buffer) {
-            MediaToolReportMenu.writeClientData(buffer, sources);
         }
     }
 
@@ -186,18 +181,19 @@ public class MediaManagementToolItem extends Item {
     }
 
     private static void rememberMp4(ItemStack tool, UUID deviceId) {
-        tool.update(DataComponents.CUSTOM_DATA, new CompoundTag(), customData -> customData.update(tag -> {
-            tag.putString(TAG_TARGET_KIND, TARGET_KIND_MP4);
-            tag.putString(TAG_MP4_DEVICE_ID, deviceId.toString());
-        }));
+        // 1.20.1：CUSTOM_DATA 组件即物品自身 NBT，update 等价于就地写入。
+        CompoundTag tag = tool.getOrCreateTag();
+        tag.putString(TAG_TARGET_KIND, TARGET_KIND_MP4);
+        tag.putString(TAG_MP4_DEVICE_ID, deviceId.toString());
     }
 
     private static UUID readRememberedMp4(ItemStack tool) {
-        CustomData customData = tool.get(DataComponents.CUSTOM_DATA);
-        if (customData == null || customData.isEmpty()) {
+        // 1.20.1：CUSTOM_DATA 即物品自身 NBT（可空），等价于 stack.get(DataComponents.CUSTOM_DATA)。
+        CompoundTag existing = tool.getTag();
+        if (existing == null || existing.isEmpty()) {
             return null;
         }
-        CompoundTag tag = customData.copy();
+        CompoundTag tag = existing.copy();
         if (!TARGET_KIND_MP4.equals(LinkHelper.getStringOr(tag, TAG_TARGET_KIND, ""))) {
             return null;
         }

@@ -21,6 +21,7 @@ import com.zhongbai233.net_music_can_play_bili.server.PlaybackAuditManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModContainer;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
@@ -32,7 +33,8 @@ import org.slf4j.Logger;
 @Mod(NetMusicCanPlayBili.MODID)
 public class NetMusicCanPlayBili {
     public static final String MODID = "net_music_can_play_bili";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    /** 模组级日志器。1.20.1 移植：其他包（server/link 等）也在用，故不是 private。 */
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public NetMusicCanPlayBili(IEventBus modEventBus, ModContainer modContainer) {
         ModAttributes.ATTRIBUTES.register(modEventBus);
@@ -41,7 +43,9 @@ public class NetMusicCanPlayBili {
         ModItems.ITEMS.register(modEventBus);
         ModItems.TABS.register(modEventBus);
         ModMenus.MENU_TYPES.register(modEventBus);
-        modEventBus.addListener(ModernTurntableNetwork::register);
+        // 1.20.1 的网络注册入口（不是事件监听器）：init 会强制 CHANNEL 静态初始化，
+        // 并在 FMLCommonSetupEvent 里 enqueueWork 去注册所有包。
+        ModernTurntableNetwork.init(modEventBus);
         modEventBus.addListener(this::registerCapabilities);
         MinecraftForge.EVENT_BUS.addListener(NetMusicPermissions::onPermissionGather);
         MinecraftForge.EVENT_BUS.addListener(NetMusicBiliServerCommands::onRegisterCommands);
@@ -55,7 +59,9 @@ public class NetMusicCanPlayBili {
         MinecraftForge.EVENT_BUS.addListener(PlaybackAuditManager::onPlayerLoggedIn);
 
         modEventBus.addListener(Config::onConfigChanged);
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        // 1.20.1 移植：ModContainer 上没有 registerConfig（那是 1.20.4+/NeoForge），
+        // 1.20.1 的正解是 ModLoadingContext.get().registerConfig(...)。
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
         MusicPlayResolverManager.registerResolver(new BiliAudioResolver());
         TempFileByteSpool.cleanupOrphanedSpoolFiles();
         LOGGER.info("BiliAudioResolver registered with NetMusic");
@@ -65,9 +71,10 @@ public class NetMusicCanPlayBili {
             BiliConfig.load();
             BiliClientAudioHandlers.register();
             // 1.21.1:ClientTooltipComponent 是接口,自定义 tooltip 工厂走 NeoForge 事件注册。
+            // 1.20.1 的 eventbus 6.2.33 没有 addListener(Class, Consumer) 重载，
+            // 用「立即 lambda 指定事件类型」的写法（类型由参数推出）。
             modEventBus.addListener(
-                    net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent.class,
-                    event -> event.register(
+                    (net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent event) -> event.register(
                             com.zhongbai233.net_music_can_play_bili.client.tooltip.MP4QueueTooltip.class,
                             com.zhongbai233.net_music_can_play_bili.client.tooltip.ClientMP4QueueTooltip::new));
         }
@@ -106,8 +113,9 @@ public class NetMusicCanPlayBili {
             Class<?> selfTest = Class.forName(className);
             var handler = selfTest.getMethod("onServerStarted",
                     net.minecraftforge.event.server.ServerStartedEvent.class);
-            MinecraftForge.EVENT_BUS.addListener(net.minecraftforge.event.server.ServerStartedEvent.class,
-                    event -> invokeDevelopmentSelfTest(handler, event));
+            // 同上：1.20.1 的 eventbus 没有 addListener(Class, Consumer) 重载。
+            MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.server.ServerStartedEvent event) ->
+                    invokeDevelopmentSelfTest(handler, event));
         } catch (ReflectiveOperationException ex) {
             throw new IllegalStateException("Unable to register " + description, ex);
         }

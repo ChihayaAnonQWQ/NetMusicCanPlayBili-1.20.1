@@ -5,7 +5,6 @@ import com.zhongbai233.net_music_can_play_bili.link.AudioLinkIndex;
 import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
 import com.zhongbai233.net_music_can_play_bili.media.VideoSurfaceBrightness;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -172,8 +171,8 @@ public class VideoProjectorBlockEntity extends SyncedBlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
-        super.saveAdditional(output, registries);
+    protected void saveAdditional(CompoundTag output) {
+        super.saveAdditional(output);
         LinkHelper.saveLinkToBE(output, linkedTurntablePos,
                 LINK_KEY + "_has", LINK_KEY + "_x", LINK_KEY + "_y", LINK_KEY + "_z");
         output.putFloat(PROJ_YAW, projectionYaw);
@@ -187,8 +186,8 @@ public class VideoProjectorBlockEntity extends SyncedBlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
-        super.loadAdditional(input, registries);
+    public void load(CompoundTag input) {
+        super.load(input);
         BlockPos oldLinkedTurntablePos = this.linkedTurntablePos;
         int oldPreferredQuality = this.preferredQuality;
         this.linkedTurntablePos = LinkHelper.loadLinkFromBE(input,

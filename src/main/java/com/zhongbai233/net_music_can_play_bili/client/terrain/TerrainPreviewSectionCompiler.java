@@ -269,8 +269,18 @@ public final class TerrainPreviewSectionCompiler {
         float[] v = {sprite.getV1(), sprite.getV1(), sprite.getV0(), sprite.getV1()};
         var normal = direction.step();
         for (int index = 0; index < 4; index++) {
-            output.addVertex(vertices[index][0], vertices[index][1], vertices[index][2],
-                    color, u[index], v[index], 0, light, normal.x(), normal.y(), normal.z());
+            // 1.20.1 没有 1.21 的 11 参 addVertex(x,y,z,color,u,v,overlay,light,nx,ny,nz) 便捷重载，
+            // 按本层实际格式逐元素展开。本工程的四个地形层都是原版 solid/cutoutMipped/cutout/translucent，
+            // 1.20.1 它们的格式是 DefaultVertexFormat.BLOCK =
+            // POSITION,COLOR,UV0,UV2,NORMAL,PADDING（<b>没有 UV1/overlay</b>，1.21 才多出 overlay），
+            // 所以这里不能写 overlayCoords（会抛 "Overlay is not the current element"），
+            // 且末尾必须显式 endVertex()（1.20.1 只在 endVertex() 里递增顶点计数）。
+            output.vertex(vertices[index][0], vertices[index][1], vertices[index][2])
+                    .color(color)
+                    .uv(u[index], v[index])
+                    .uv2(light)
+                    .normal(normal.x(), normal.y(), normal.z())
+                    .endVertex();
         }
     }
 
@@ -335,39 +345,56 @@ public final class TerrainPreviewSectionCompiler {
         }
 
         @Override
-        public VertexConsumer addVertex(float x, float y, float z) {
-            delegate.addVertex(x + offsetX, y + offsetY, z + offsetZ);
+        public VertexConsumer vertex(double x, double y, double z) {
+            delegate.vertex(x + offsetX, y + offsetY, z + offsetZ);
             return this;
         }
 
         @Override
-        public VertexConsumer setColor(int red, int green, int blue, int alpha) {
-            delegate.setColor(red, green, blue, alpha);
+        public VertexConsumer color(int red, int green, int blue, int alpha) {
+            delegate.color(red, green, blue, alpha);
             return this;
         }
 
         @Override
-        public VertexConsumer setUv(float u, float v) {
-            delegate.setUv(u, v);
+        public VertexConsumer uv(float u, float v) {
+            delegate.uv(u, v);
+            return this;
+        }
+
+        /** 1.21 的 setUv1(int,int) 就是 1.20.1 的 overlayCoords(int,int)（UV1 元素）。 */
+        @Override
+        public VertexConsumer overlayCoords(int u, int v) {
+            delegate.overlayCoords(u, v);
+            return this;
+        }
+
+        /** 1.21 的 setUv2(int,int) 就是 1.20.1 的 uv2(int,int)（UV2 = 光照贴图元素）。 */
+        @Override
+        public VertexConsumer uv2(int u, int v) {
+            delegate.uv2(u, v);
             return this;
         }
 
         @Override
-        public VertexConsumer setUv1(int u, int v) {
-            delegate.setUv1(u, v);
+        public VertexConsumer normal(float x, float y, float z) {
+            delegate.normal(x, y, z);
             return this;
         }
 
         @Override
-        public VertexConsumer setUv2(int u, int v) {
-            delegate.setUv2(u, v);
-            return this;
+        public void endVertex() {
+            delegate.endVertex();
         }
 
         @Override
-        public VertexConsumer setNormal(float x, float y, float z) {
-            delegate.setNormal(x, y, z);
-            return this;
+        public void defaultColor(int red, int green, int blue, int alpha) {
+            delegate.defaultColor(red, green, blue, alpha);
+        }
+
+        @Override
+        public void unsetDefaultColor() {
+            delegate.unsetDefaultColor();
         }
     }
 

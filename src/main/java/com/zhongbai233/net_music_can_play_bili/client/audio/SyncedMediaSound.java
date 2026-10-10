@@ -185,7 +185,10 @@ public abstract class SyncedMediaSound extends AbstractTickableSoundInstance {
             java.io.InputStream errorSound = net.minecraft.client.Minecraft.getInstance()
                     .getResourceManager()
                     .open(com.github.tartaricacid.netmusic.client.audio.NetMusicSound.ERROR_SOUND);
-            return own(new net.minecraft.client.sounds.JOrbisAudioStream(errorSound));
+            // 1.20.1：没有 net.minecraft.client.sounds.JOrbisAudioStream（1.21 才改名），
+            // 原版等价的 OGG Vorbis 解码流是 com.mojang.blaze3d.audio.OggAudioStream，
+            // 同样实现 net.minecraft.client.sounds.AudioStream、构造器同为 (InputStream)。
+            return own(new com.mojang.blaze3d.audio.OggAudioStream(errorSound));
         } catch (Exception fallbackError) {
             CompletionException failure = new CompletionException(cause);
             failure.addSuppressed(fallbackError);

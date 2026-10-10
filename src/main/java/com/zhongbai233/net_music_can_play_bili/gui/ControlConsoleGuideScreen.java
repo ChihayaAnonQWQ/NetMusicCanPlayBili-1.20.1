@@ -37,9 +37,12 @@ public final class ControlConsoleGuideScreen extends Screen {
     protected void init() {
         int x = panelX();
         int y = panelY();
-        doNotShowAgain = addRenderableWidget(Checkbox.builder(
-                Component.translatable("gui.net_music_can_play_bili.control_console.guide.do_not_show_again"), font)
-                .pos(x + 28, y + 164).selected(false).maxWidth(PANEL_W - 56).build());
+        // 1.20.1 的 Checkbox 没有 Builder（javap 实证：Checkbox 只暴露构造器，无 builder(...) 静态方法）。
+        // 等价改写：构造器 (x, y, width, height, message, selected, showLabel)，
+        // 其中 width 对应 1.21 的 maxWidth（含标签的可点击宽度），height 为复选框边长（1.21 Builder 默认 20）。
+        doNotShowAgain = addRenderableWidget(new Checkbox(x + 28, y + 164, PANEL_W - 56, 20,
+                Component.translatable("gui.net_music_can_play_bili.control_console.guide.do_not_show_again"),
+                false, true));
         addRenderableWidget(new BlackGoldButton(x + 28, y + 198, 160, 22,
                 Component.translatable("gui.net_music_can_play_bili.control_console.guide.enter"),
                 button -> enterEditor(), BlackGoldUi.GOLD));
@@ -64,13 +67,13 @@ public final class ControlConsoleGuideScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics) {
         BlackGoldUi.drawBackground(graphics, width, height);
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        this.renderBackground(graphics);
         int x = panelX();
         int y = panelY();
         BlackGoldUi.drawPanel(graphics, x, y, PANEL_W, PANEL_H);

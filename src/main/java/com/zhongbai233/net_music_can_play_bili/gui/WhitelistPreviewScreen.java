@@ -22,7 +22,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 import java.util.OptionalLong;
 import java.util.Objects;
@@ -243,13 +243,13 @@ public class WhitelistPreviewScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
+    public void renderBackground(GuiGraphics g) {
         BlackGoldUi.drawBackground(g, width, height);
     }
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        this.renderBackground(g, mx, my, pt);
+        this.renderBackground(g);
         int bx = boxX();
         int by = boxY();
         BlackGoldUi.drawPanel(g, bx, by, boxWidth(), boxHeight());
@@ -758,7 +758,7 @@ public class WhitelistPreviewScreen extends Screen {
                 ? "正在切换预览……"
                 : "正在调整播放位置……";
         rebuildButtons();
-        PacketDistributor.sendToServer(new WhitelistReviewActionPacket(
+        NcpbNetworkDispatch.sendToServer(new WhitelistReviewActionPacket(
                 action, target, targetMillis, pendingPreviewRequestId));
     }
 
@@ -830,7 +830,7 @@ public class WhitelistPreviewScreen extends Screen {
         WhitelistReviewPacket review = WhitelistReviewScreen.lastPayload();
         int entryOffset = review == null ? 0 : review.entryOffset();
         int removalOffset = review == null ? 0 : review.removalOffset();
-        PacketDistributor.sendToServer(new WhitelistReviewActionPacket(
+        NcpbNetworkDispatch.sendToServer(new WhitelistReviewActionPacket(
                 WhitelistReviewActionPacket.Action.REMOVE, targetId, 0L, note, expectedAddedAt,
                 entryOffset, removalOffset, deletionRequestId));
     }

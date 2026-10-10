@@ -166,7 +166,15 @@ public class VideoProjectorRenderer
         }
     }
 
-    @Override
+    /**
+     * BER 裁剪包围盒。
+     *
+     * <p><b>1.20.1 移植未接线</b>：1.21 的 Forge 把该钩子放在 {@code IForgeBlockEntityRenderer}
+     * 上（所以 {@code @Override} 成立），1.20.1 的 {@code BlockEntityRenderer} 接口没有它
+     * （javap 已确证），对应钩子是 {@code IForgeBlockEntity#getRenderBoundingBox()}，
+     * 挂在 BlockEntity 上。真正接线需要改 {@code blockentity/VideoProjectorBlockEntity}
+     * （不在本次写入范围）。本类内部仍有调用（距离判可见性），故方法保留。</p>
+     */
     public AABB getRenderBoundingBox(VideoProjectorBlockEntity blockEntity) {
         VideoBillboardPreview.ProjectorFrameSnapshot frame =
                 VideoBillboardPreview.currentProjectorDisplayFrame(blockEntity.getBlockPos());

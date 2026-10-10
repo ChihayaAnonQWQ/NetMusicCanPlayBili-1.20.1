@@ -2,8 +2,10 @@ package com.zhongbai233.net_music_can_play_bili.mixin;
 
 import com.github.tartaricacid.netmusic.client.gui.ComputerMenuScreen;
 import com.zhongbai233.net_music_can_play_bili.bili.BiliConfig;
+import com.zhongbai233.net_music_can_play_bili.bridge.ScreenWidgets;
 import com.zhongbai233.net_music_can_play_bili.gui.BiliQrLoginScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
@@ -29,7 +31,10 @@ public abstract class ComputerMenuScreenMixin {
     @Unique
     private Button net_music_can_play_bili$dolbyButton;
 
-    @Inject(method = "init", at = @At("TAIL"))
+    // remap = true 必须显式写：`init` 来自 MC 的 Screen（生产名 m_7856_），
+    // 而本 mixin 类级是 remap = false（目标是前置模组 NetMusic 的类），
+    // mixin 的类级 remap 会被成员继承（注解处理器字节码实证），不显式覆盖就不会生成 refmap 条目。
+    @Inject(method = "init", at = @At("TAIL"), remap = true)
     private void net_music_can_play_bili$initLoginButton(CallbackInfo ci) {
         this.net_music_can_play_bili$loginButton = Button.builder(
                 Component.literal("B站登录"),
@@ -51,8 +56,9 @@ public abstract class ComputerMenuScreenMixin {
                 .size(60, 18)
                 .build();
 
-        ScreenAccessor screen = (ScreenAccessor) this;
-        screen.net_music_can_play_bili$addRenderableWidget(this.net_music_can_play_bili$loginButton);
-        screen.net_music_can_play_bili$addRenderableWidget(this.net_music_can_play_bili$dolbyButton);
+        // 1.20.1：Screen#addRenderableWidget 是 protected，且其 @Invoker 形态拿不到 refmap 条目
+        // （泛型目标不被注解处理器映射），故走 ScreenWidgets 复刻的等价实现。
+        ScreenWidgets.addRenderableWidget((Screen) (Object) this, this.net_music_can_play_bili$loginButton);
+        ScreenWidgets.addRenderableWidget((Screen) (Object) this, this.net_music_can_play_bili$dolbyButton);
     }
 }

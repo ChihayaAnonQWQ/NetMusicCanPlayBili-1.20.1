@@ -271,7 +271,7 @@ abstract class HolographicEditorInputScreen extends HolographicEditorRenderScree
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         if (controlConsoleMode && mouseX >= 0.0D && mouseX < CONTROL_LEFT_PANEL_W && scrollY != 0.0D) {
             int listTop = 34;
             int actionTop = Math.max(listTop + 24, height - 60);
@@ -289,7 +289,7 @@ abstract class HolographicEditorInputScreen extends HolographicEditorRenderScree
             syncLegacyPreviewScale();
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     protected void applyGizmoDrag(double mouseX, double mouseY) {

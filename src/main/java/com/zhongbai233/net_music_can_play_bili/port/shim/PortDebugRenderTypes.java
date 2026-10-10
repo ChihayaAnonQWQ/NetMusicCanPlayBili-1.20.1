@@ -2,7 +2,6 @@ package com.zhongbai233.net_music_can_play_bili.port.shim;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import java.util.OptionalDouble;
 import java.util.function.Function;
 import net.minecraft.Util;
 import net.minecraft.client.renderer.RenderStateShard;
@@ -28,14 +27,11 @@ public final class PortDebugRenderTypes {
                     256,
                     false,
                     false,
-                    RenderType.CompositeState.builder()
-                            .setShaderState(RenderStateShard.RENDERTYPE_LINES_SHADER)
-                            .setLineState(new RenderStateShard.LineStateShard(OptionalDouble.of(width)))
-                            .setLayeringState(RenderStateShard.VIEW_OFFSET_Z_LAYERING)
-                            .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
-                            .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
-                            .setCullState(RenderStateShard.NO_CULL)
-                            .createCompositeState(false)));
+                    // 1.20.1：RENDERTYPE_LINES_SHADER / LineStateShard / VIEW_OFFSET_Z_LAYERING /
+                    // TRANSLUCENT_TRANSPARENCY / COLOR_DEPTH_WRITE / NO_CULL 全是 protected，
+                    // 包外不能引用；改由 PortRenderStateShards（RenderStateShard 子类）原样转发。
+                    // 状态组合与 1.21 版本完全一致，没有增删任何一项。
+                    PortRenderStateShards.translucentLinesState(width)));
 
     /** Translucent debug lines with the given GL line width in pixels. */
     public static RenderType translucentLines(float width) {

@@ -1,5 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.gui;
-import net.minecraftforge.network.PacketDistributor;
+import com.zhongbai233.net_music_can_play_bili.network.NcpbNetworkDispatch;
 
 
 import com.zhongbai233.net_music_can_play_bili.blockentity.SpeakerBlockEntity;
@@ -123,7 +123,7 @@ public class SpeakerScreen extends BlackGoldScreen {
     protected void onSave() {
         SpeakerBlockEntity be = getSpeakerBE();
         if (be != null && minecraft != null && minecraft.getConnection() != null) {
-            PacketDistributor.sendToServer(new SpeakerConfigPacket(blockPos, channelIndex, volume, autoMixJoc));
+            NcpbNetworkDispatch.sendToServer(new SpeakerConfigPacket(blockPos, channelIndex, volume, autoMixJoc));
             be.setChannelIndex(channelIndex);
             be.setVolume(volume);
             be.setAutoMixJoc(autoMixJoc);

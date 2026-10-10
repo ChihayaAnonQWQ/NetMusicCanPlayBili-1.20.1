@@ -7,7 +7,6 @@ import com.zhongbai233.net_music_can_play_bili.init.ModBlocks;
 import com.zhongbai233.net_music_can_play_bili.link.AudioLinkIndex;
 import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.server.level.ServerLevel;
@@ -125,8 +124,8 @@ public class SpeakerBlockEntity extends SyncedBlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
-        super.saveAdditional(output, registries);
+    protected void saveAdditional(CompoundTag output) {
+        super.saveAdditional(output);
         LinkHelper.saveLinkToBE(output, linkedTurntablePos,
                 LINK_KEY + "_has", LINK_KEY + "_x", LINK_KEY + "_y", LINK_KEY + "_z");
         output.putInt(CHANNEL_INDEX, channelIndex);
@@ -137,8 +136,8 @@ public class SpeakerBlockEntity extends SyncedBlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
-        super.loadAdditional(input, registries);
+    public void load(CompoundTag input) {
+        super.load(input);
         this.linkedTurntablePos = LinkHelper.loadLinkFromBE(input,
                 LINK_KEY + "_has", LINK_KEY + "_x", LINK_KEY + "_y", LINK_KEY + "_z");
         this.channelIndex = getIntOr(input, CHANNEL_INDEX, CH_NONE);

@@ -1,6 +1,5 @@
 package com.zhongbai233.net_music_can_play_bili.block;
 
-import com.mojang.serialization.MapCodec;
 import com.zhongbai233.net_music_can_play_bili.blockentity.SpeakerBlockEntity;
 import com.zhongbai233.net_music_can_play_bili.link.LinkHelper;
 import net.minecraft.core.BlockPos;
@@ -38,7 +37,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class SpeakerBlock extends Block implements EntityBlock {
     public static final BooleanProperty ACTIVATED = BooleanProperty.create("activated");
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
-    private static final MapCodec<SpeakerBlock> CODEC = simpleCodec(SpeakerBlock::new);
     private static final VoxelShape SHAPE = Block.box(3, 0, 3, 13, 10, 13);
 
     public SpeakerBlock(Properties properties) {
@@ -51,10 +49,6 @@ public class SpeakerBlock extends Block implements EntityBlock {
                 .setValue(FACING, Direction.NORTH));
     }
 
-    @Override
-    protected MapCodec<SpeakerBlock> codec() {
-        return CODEC;
-    }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -69,12 +63,12 @@ public class SpeakerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected BlockState rotate(BlockState state, Rotation rotation) {
+    public BlockState rotate(BlockState state, Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
     }
 
     @Override
-    protected BlockState mirror(BlockState state, Mirror mirror) {
+    public BlockState mirror(BlockState state, Mirror mirror) {
         return rotate(state, mirror.getRotation(state.getValue(FACING)));
     }
 
@@ -84,12 +78,12 @@ public class SpeakerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    protected RenderShape getRenderShape(BlockState state) {
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
     }
 
@@ -115,7 +109,7 @@ public class SpeakerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
             InteractionHand hand, BlockHitResult hitResult) {
         if (!player.mayBuild()) {
             return InteractionResult.PASS;
@@ -127,7 +121,7 @@ public class SpeakerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel && (movedByPiston || !state.is(newState.getBlock()))) {
             AudioLinkIndex.removeSpeakerEndpoint(serverLevel, null, pos);
         }
