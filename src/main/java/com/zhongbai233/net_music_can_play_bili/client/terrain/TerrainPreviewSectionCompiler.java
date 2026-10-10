@@ -1,8 +1,6 @@
 package com.zhongbai233.net_music_can_play_bili.client.terrain;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -66,11 +64,15 @@ public final class TerrainPreviewSectionCompiler {
         ModelBlockRenderer blockRenderer = new ModelBlockRenderer(
                 new FrozenTerrainBlockColors(snapshotView));
         LiquidBlockRenderer fluidRenderer = new LiquidBlockRenderer();
-        ByteBufferBuilder[] storageByLayer = new ByteBufferBuilder[LAYERS.length];
+        // 1.20.1 移植说明：
+        //  * 没有 ByteBufferBuilder —— 1.20.1 的 BufferBuilder 自带底层存储，
+        //    故每层只保留一个 BufferBuilder（构造后需显式 begin）。
+        //  * 没有 MeshData —— 用 BufferBuilder.RenderedBuffer 等价替代。
+        //  * 没有「构建后重排半透明索引」的能力（MeshData#sortQuads /
+        //    VertexBuffer#uploadIndexBuffer 都是 1.21 的 API），故半透明层的
+        //    相机相关重排降级为 no-op（详见 TerrainPreviewGpuCache.GpuLayer）。
         BufferBuilder[] buildersByLayer = new BufferBuilder[LAYERS.length];
-        Map<RenderType, MeshData> meshes = new HashMap<>();
-        Map<RenderType, MeshData.SortState> sortStates = new HashMap<>();
-        List<ByteBufferBuilder> auxiliaryStorage = new ArrayList<>();
+        Map<RenderType, BufferBuilder.RenderedBuffer> meshes = new HashMap<>();
         PoseStack poseStack = new PoseStack();
         RandomSource random = RandomSource.create();
         BlockPos.MutableBlockPos worldPos = new BlockPos.MutableBlockPos();
@@ -87,14 +89,13 @@ public final class TerrainPreviewSectionCompiler {
                 try {
                     if (block.cellSize() > 1) {
                         tesselateMaterialCell(block, snapshotView, modelShaper,
-                                occupied, storageByLayer, buildersByLayer);
+                                occupied, buildersByLayer);
                         continue;
                     }
                     FluidState fluidState = block.state().getFluidState();
                     if (!fluidState.isEmpty()) {
                         fluidRenderer.tesselate(snapshotView, worldPos,
-                                sectionLocalFluidOutput(builderFor(RenderType.translucent(),
-                                        storageByLayer, buildersByLayer)),
+                                sectionLocalFluidOutput(builderFor(RenderType.translucent(), buildersByLayer)),
                                 block.state(), fluidState);
                     }
                     if (block.state().getRenderShape() == net.minecraft.world.level.block.RenderShape.MODEL) {
@@ -117,7 +118,7 @@ public final class TerrainPreviewSectionCompiler {
                                     block.localZ() - 0.5F);
                             try {
                                 blockRenderer.tesselateBlock(snapshotView, model, block.state(), worldPos,
-                                        poseStack, builderFor(target, storageByLayer, buildersByLayer),
+                                        poseStack, builderFor(target, buildersByLayer),
                                         true, random, block.state().getSeed(worldPos),
                                         OverlayTexture.NO_OVERLAY, ModelData.EMPTY, target);
                             } finally {
@@ -136,36 +137,20 @@ public final class TerrainPreviewSectionCompiler {
                             worldX, worldY, worldZ, snapshot.section(), incompatibleModBlock);
                 }
             }
-            Map<RenderType, ByteBufferBuilder> storage = new HashMap<>();
             for (int i = 0; i < LAYERS.length; i++) {
                 BufferBuilder builder = buildersByLayer[i];
                 if (builder == null) {
                     continue;
                 }
-                MeshData mesh = builder.build();
+                // 1.20.1：build() -> endOrDiscardIfEmpty()；空缓冲会被丢弃并返回 null。
+                BufferBuilder.RenderedBuffer mesh = builder.endOrDiscardIfEmpty();
                 if (mesh != null) {
-                    if (LAYERS[i] == RenderType.translucent()) {
-                        int initialIndexBytes = Math.max(256,
-                                mesh.drawState().indexCount() * mesh.drawState().indexType().bytes);
-                        ByteBufferBuilder indexStorage = new ByteBufferBuilder(initialIndexBytes);
-                        MeshData.SortState sortState = mesh.sortQuads(indexStorage,
-                                VertexSorting.DISTANCE_TO_ORIGIN);
-                        if (sortState != null) {
-                            sortStates.put(LAYERS[i], sortState);
-                            auxiliaryStorage.add(indexStorage);
-                        } else {
-                            indexStorage.close();
-                        }
-                    }
                     meshes.put(LAYERS[i], mesh);
                 }
-                storage.put(LAYERS[i], storageByLayer[i]);
             }
-            return new CompiledCpuSection(snapshot, meshes, storage, sortStates, auxiliaryStorage);
+            return new CompiledCpuSection(snapshot, meshes);
         } catch (Throwable failure) {
-            meshes.values().forEach(mesh -> mesh.close());
-            closeStorage(storageByLayer);
-            auxiliaryStorage.forEach(storageBuffer -> storageBuffer.close());
+            meshes.values().forEach(mesh -> mesh.release());
             throw failure;
         }
     }
@@ -206,7 +191,7 @@ public final class TerrainPreviewSectionCompiler {
     /** 大格子(map 悬浮块)只画外表面：取烘焙模型 particle 贴图当底图，按透明度定层。 */
     private static void tesselateMaterialCell(TerrainBlockSectionSnapshot.VisibleBlock block,
             TerrainPreviewBlockAndTintGetter snapshotView, BlockModelShaper modelShaper,
-            boolean[] occupied, ByteBufferBuilder[] storageByLayer, BufferBuilder[] buildersByLayer) {
+            boolean[] occupied, BufferBuilder[] buildersByLayer) {
         BakedModel model = modelShaper.getBlockModel(block.state());
         TextureAtlasSprite sprite = model.getParticleIcon(ModelData.EMPTY);
         RenderType layer;
@@ -225,7 +210,7 @@ public final class TerrainPreviewSectionCompiler {
                 layer = RenderType.cutout();
             }
         }
-        BufferBuilder output = builderFor(layer, storageByLayer, buildersByLayer);
+        BufferBuilder output = builderFor(layer, buildersByLayer);
         // 1.20.1 没有 List#getFirst（Java 21 的 SequencedCollection）。
         int tint = block.tintLayers().isEmpty() ? -1 : block.tintLayers().get(0);
         if (tint != -1 && (tint & 0xFF000000) == 0) {
@@ -310,14 +295,19 @@ public final class TerrainPreviewSectionCompiler {
         }
     }
 
-    private static BufferBuilder builderFor(RenderType layer,
-            ByteBufferBuilder[] storage, BufferBuilder[] builders) {
+    /**
+     * 取（或创建并 begin）某个渲染层的顶点缓冲。
+     *
+     * <p>1.20.1 移植说明：1.21 的 {@code new BufferBuilder(ByteBufferBuilder, Mode, VertexFormat)}
+     * 是"构造即开始写入"；1.20.1 对应 {@code new BufferBuilder(capacity)} +
+     * {@code begin(mode, format)}，构造后必须显式 begin，且只做一次。</p>
+     */
+    private static BufferBuilder builderFor(RenderType layer, BufferBuilder[] builders) {
         int index = layerIndex(layer);
         BufferBuilder builder = builders[index];
         if (builder == null) {
-            ByteBufferBuilder bytes = new ByteBufferBuilder(INITIAL_LAYER_BUFFER_BYTES);
-            storage[index] = bytes;
-            builder = new BufferBuilder(bytes, VertexFormat.Mode.QUADS, layer.format);
+            builder = new BufferBuilder(INITIAL_LAYER_BUFFER_BYTES);
+            builder.begin(VertexFormat.Mode.QUADS, layer.format());
             builders[index] = builder;
         }
         return builder;
@@ -381,37 +371,37 @@ public final class TerrainPreviewSectionCompiler {
         }
     }
 
-    private static void closeStorage(ByteBufferBuilder[] storage) {
-        for (ByteBufferBuilder bytes : storage) {
-            if (bytes != null) {
-                bytes.close();
-            }
-        }
-    }
-
+    /**
+     * 编译产物：每层一个已 end 的顶点缓冲。
+     *
+     * <p><b>1.20.1 降级说明</b>：1.21 的 {@code CompiledCpuSection} 还持有「每层的
+     * ByteBufferBuilder 存储」与「半透明层的 {@code MeshData.SortState}」，用于在相机移动时
+     * <b>只重排索引</b>而不重建顶点。1.20.1 <b>没有这些 API</b>：{@code MeshData} 不存在，
+     * {@code BufferBuilder.SortState} 没有任何公开方法（构造器也是包私有），
+     * {@code VertexBuffer#uploadIndexBuffer} 也不存在。故这里只保留顶点缓冲，
+     * 半透明层的相机相关重排随之降级（见 {@code TerrainPreviewGpuCache.GpuLayer}）。</p>
+     */
     public record CompiledCpuSection(TerrainBlockSectionSnapshot source,
-            Map<RenderType, MeshData> layers,
-            Map<RenderType, ByteBufferBuilder> storage,
-            Map<RenderType, MeshData.SortState> sortStates,
-            List<ByteBufferBuilder> auxiliaryStorage) implements AutoCloseable {
+            Map<RenderType, BufferBuilder.RenderedBuffer> layers) implements AutoCloseable {
         public CompiledCpuSection {
             java.util.Objects.requireNonNull(source, "source");
             layers = new HashMap<>(java.util.Objects.requireNonNull(layers, "layers"));
-            storage = new HashMap<>(java.util.Objects.requireNonNull(storage, "storage"));
-            sortStates = new HashMap<>(java.util.Objects.requireNonNull(sortStates, "sortStates"));
-            auxiliaryStorage = new ArrayList<>(java.util.Objects.requireNonNull(
-                    auxiliaryStorage, "auxiliaryStorage"));
         }
 
         @Override
         public void close() {
-            layers.values().forEach(mesh -> mesh.close());
+            for (BufferBuilder.RenderedBuffer mesh : layers.values()) {
+                try {
+                    mesh.release();
+                } catch (IllegalStateException alreadyReleased) {
+                    // 1.21 的 MeshData#close 是幂等的，但 1.20.1 的 RenderedBuffer#release
+                    // 二次调用会抛 IllegalStateException("Buffer has already been released!")，
+                    // 而 VertexBuffer#upload 内部已经调用过 release（反汇编确证：upload 的
+                    // 正常与异常路径各有一处 invokevirtual RenderedBuffer.release）。
+                    // 即"已被 upload 接管"正是这里要容忍的情况。
+                }
+            }
             layers.clear();
-            storage.values().forEach(bytes -> bytes.close());
-            storage.clear();
-            sortStates.clear();
-            auxiliaryStorage.forEach(storageBuffer -> storageBuffer.close());
-            auxiliaryStorage.clear();
         }
     }
 }

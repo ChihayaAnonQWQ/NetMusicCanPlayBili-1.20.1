@@ -4,7 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -24,7 +24,7 @@ import java.util.function.Function;
  * which matches the per-frame frequency of the 26.x pipeline.</p>
  *
  * <p>The renderer owns an isolated {@link MultiBufferSource.BufferSource} built on its own
- * {@link ByteBufferBuilder}: the shared GUI/world buffer sources can therefore never be flushed
+ * {@link BufferBuilder}: the shared GUI/world buffer sources can therefore never be flushed
  * while the pip framebuffer or projection is active.</p>
  */
 public abstract class PortPictureInPictureRenderer<S> implements AutoCloseable {
@@ -34,7 +34,7 @@ public abstract class PortPictureInPictureRenderer<S> implements AutoCloseable {
     /** Geometry buffer isolated from the shared {@link Minecraft#renderBuffers()} sources. */
     protected final MultiBufferSource.BufferSource bufferSource;
     /** {@code bufferSource} 底层的 off-heap 缓冲；1.21.1 的 BufferSource 不负责释放它。 */
-    private final ByteBufferBuilder bufferSourceBuilder;
+    private final BufferBuilder bufferSourceBuilder;
 
     /** 1.21.1 lines render type takes the width from a global {@link RenderSystem#lineWidth}; track it. */
     protected float activeLineWidth = 1.0F;
@@ -47,7 +47,7 @@ public abstract class PortPictureInPictureRenderer<S> implements AutoCloseable {
         // 1.21.1 has no GUI-provided pip buffer; the supplied source (kept for 26.x call-site
         // compatibility with the renderer factory contract) is ignored so that the pip can never
         // flush shared batches under a private projection.
-        this.bufferSourceBuilder = new ByteBufferBuilder(4096);
+        this.bufferSourceBuilder = new BufferBuilder(4096);
         this.bufferSource = MultiBufferSource.immediate(this.bufferSourceBuilder);
     }
 
@@ -166,7 +166,7 @@ public abstract class PortPictureInPictureRenderer<S> implements AutoCloseable {
             target = null;
         }
         if (bufferSourceBuilder != null) {
-            bufferSourceBuilder.close();
+            bufferSourceBuilder.discard();
         }
     }
 }

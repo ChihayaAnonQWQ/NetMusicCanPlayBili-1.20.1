@@ -3,7 +3,7 @@ package com.zhongbai233.net_music_can_play_bili.client.renderer.item;
 import com.github.tartaricacid.netmusic.item.ItemMusicCD;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import com.mojang.logging.LogUtils;
 import com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili;
@@ -54,7 +54,7 @@ final class PadOffscreenGuiRenderer implements AutoCloseable {
     private RenderTargetTexture texture;
     private MultiBufferSource.BufferSource guiBuffer;
     /** {@code guiBuffer} 底层的 off-heap 缓冲；1.21.1 的 BufferSource 不负责释放它。 */
-    private ByteBufferBuilder guiBufferBuilder;
+    private BufferBuilder guiBufferBuilder;
     private boolean registered;
     private boolean failed;
     private boolean loggedReady;
@@ -148,7 +148,7 @@ final class PadOffscreenGuiRenderer implements AutoCloseable {
         minecraft.getTextureManager().register(textureId, texture);
         registered = true;
         // 隔离 BufferSource:本渲染器在世界渲染事件层级调用,绝不能 flush 共享 GUI/世界批次。
-        guiBufferBuilder = new ByteBufferBuilder(4096);
+        guiBufferBuilder = new BufferBuilder(4096);
         guiBuffer = MultiBufferSource.immediate(guiBufferBuilder);
     }
 
@@ -666,7 +666,7 @@ final class PadOffscreenGuiRenderer implements AutoCloseable {
         texture = null;
         guiBuffer = null;
         if (guiBufferBuilder != null) {
-            guiBufferBuilder.close();
+            guiBufferBuilder.discard();
             guiBufferBuilder = null;
         }
         mapRenderContext.close();

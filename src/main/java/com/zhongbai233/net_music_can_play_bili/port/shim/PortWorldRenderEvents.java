@@ -1,6 +1,6 @@
 package com.zhongbai233.net_music_can_play_bili.port.shim;
 
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
@@ -9,8 +9,8 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
  *
  * <p>Each {@link RenderLevelStageEvent} handler that wants to submit world-space
  * geometry creates a {@link PortSubmitNodeCollector} backed by its own
- * {@link MultiBufferSource.BufferSource}/{@link ByteBufferBuilder} (mirroring
- * {@code MultiBufferSource.immediate(new ByteBufferBuilder(n))}) and must call
+ * {@link MultiBufferSource.BufferSource}/{@link BufferBuilder} (mirroring
+ * {@code MultiBufferSource.immediate(new BufferBuilder(n))}) and must call
  * {@link #end(PortSubmitNodeCollector)} once per stage. The scratch buffer is
  * reused across frames on the render thread and reclaimed after every batch.</p>
  */
@@ -43,7 +43,7 @@ public final class PortWorldRenderEvents {
     }
 
     private static final class Scratch {
-        final ByteBufferBuilder builder = new ByteBufferBuilder(SCRATCH_BUFFER_BYTES);
+        final BufferBuilder builder = new BufferBuilder(SCRATCH_BUFFER_BYTES);
         final MultiBufferSource.BufferSource source = MultiBufferSource.immediate(builder);
 
         Scratch() {

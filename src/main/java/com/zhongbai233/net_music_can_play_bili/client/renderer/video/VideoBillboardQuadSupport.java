@@ -1,7 +1,8 @@
 package com.zhongbai233.net_music_can_play_bili.client.renderer.video;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.zhongbai233.net_music_can_play_bili.blockentity.VideoProjectorBlockEntity;
@@ -33,13 +34,21 @@ abstract class VideoBillboardQuadSupport extends VideoBillboardState {
                 p2.x, p2.y, p2.z, p3.x, p3.y, p3.z);
     }
 
-    protected static void drawWithEventModelView(RenderType renderType, MeshData mesh, RenderLevelStageEvent event) {
+    protected static void drawWithEventModelView(RenderType renderType, BufferBuilder.RenderedBuffer mesh,
+            RenderLevelStageEvent event) {
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
         try {
-            // RenderType.draw() 使用当前模型视图矩阵；这里切到事件提供的世界矩阵，避免相机相对顶点漂移。
+            // 绘制使用当前模型视图矩阵；这里切到事件提供的世界矩阵，避免相机相对顶点漂移。
             modelViewStack.set(event.getModelViewMatrix());
-            renderType.draw(mesh);
+            // 1.20.1 的 RenderType 没有 draw(MeshData)（那是 1.21 才有的），
+            // 等价写法就是它内部做的事：setupRenderState() + BufferUploader + clearRenderState()。
+            renderType.setupRenderState();
+            try {
+                BufferUploader.drawWithShader(mesh);
+            } finally {
+                renderType.clearRenderState();
+            }
         } finally {
             modelViewStack.popMatrix();
         }

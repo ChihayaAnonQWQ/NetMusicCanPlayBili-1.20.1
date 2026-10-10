@@ -1,7 +1,6 @@
 package com.zhongbai233.net_music_can_play_bili.client.renderer.video;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.zhongbai233.net_music_can_play_bili.NetMusicCanPlayBili;
@@ -819,14 +818,18 @@ public final class VideoBillboardPreview extends VideoBillboardSessionSupport {
         }
 
         RenderType renderType = yuvRenderTypeForCurrentIrisProgram(yuvTextures);
-        BufferBuilder builder = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
+        // 1.20.1：Tesselator 没有 begin(mode, format)（1.21 的 API），
+        // 而是先取共享 BufferBuilder 再调用它的 begin(...)。
+        BufferBuilder builder = Tesselator.getInstance().getBuilder();
+        builder.begin(renderType.mode(), renderType.format());
         PoseStack poseStack = "identity".equals(YUV_IMMEDIATE_POSE) ? new PoseStack() : event.getPoseStack();
         PoseStack.Pose pose = poseStack.last();
         emitQuad(builder, pose, quad.p0x(), quad.p0y(), quad.p0z(), quad.p1x(), quad.p1y(), quad.p1z(),
                 quad.p2x(), quad.p2y(), quad.p2z(), quad.p3x(), quad.p3y(), quad.p3z(), false);
         emitQuad(builder, pose, quad.p0x(), quad.p0y(), quad.p0z(), quad.p1x(), quad.p1y(), quad.p1z(),
                 quad.p2x(), quad.p2y(), quad.p2z(), quad.p3x(), quad.p3y(), quad.p3z(), true);
-        MeshData mesh = builder.build();
+        // 1.20.1：build() -> endOrDiscardIfEmpty()（空缓冲返回 null 并丢弃）。
+        BufferBuilder.RenderedBuffer mesh = builder.endOrDiscardIfEmpty();
         if (mesh == null) {
             return;
         }
@@ -943,7 +946,10 @@ public final class VideoBillboardPreview extends VideoBillboardSessionSupport {
         float halfWidth = captured.halfHeight() * textures.width() / (float) textures.height();
         PreviewQuad quad = transformedLocalQuad(captured.pose(), halfWidth, captured.halfHeight());
         RenderType renderType = yuvRenderTypeForCurrentIrisProgram(textures);
-        BufferBuilder builder = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
+        // 1.20.1：Tesselator 没有 begin(mode, format)（1.21 的 API），
+        // 而是先取共享 BufferBuilder 再调用它的 begin(...)。
+        BufferBuilder builder = Tesselator.getInstance().getBuilder();
+        builder.begin(renderType.mode(), renderType.format());
         PoseStack.Pose identityPose = new PoseStack().last();
         emitQuad(builder, identityPose, quad.p0x(), quad.p0y(), quad.p0z(), quad.p1x(), quad.p1y(), quad.p1z(),
                 quad.p2x(), quad.p2y(), quad.p2z(), quad.p3x(), quad.p3y(), quad.p3z(), false, captured.opacity(),
@@ -951,7 +957,8 @@ public final class VideoBillboardPreview extends VideoBillboardSessionSupport {
         emitQuad(builder, identityPose, quad.p0x(), quad.p0y(), quad.p0z(), quad.p1x(), quad.p1y(), quad.p1z(),
                 quad.p2x(), quad.p2y(), quad.p2z(), quad.p3x(), quad.p3y(), quad.p3z(), true, captured.opacity(),
                 captured.brightness());
-        MeshData mesh = builder.build();
+        // 1.20.1：build() -> endOrDiscardIfEmpty()（空缓冲返回 null 并丢弃）。
+        BufferBuilder.RenderedBuffer mesh = builder.endOrDiscardIfEmpty();
         if (mesh == null) {
             return false;
         }
@@ -974,7 +981,10 @@ public final class VideoBillboardPreview extends VideoBillboardSessionSupport {
             return false;
         }
         RenderType renderType = yuvRenderTypeForCurrentIrisProgram(textures);
-        BufferBuilder builder = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
+        // 1.20.1：Tesselator 没有 begin(mode, format)（1.21 的 API），
+        // 而是先取共享 BufferBuilder 再调用它的 begin(...)。
+        BufferBuilder builder = Tesselator.getInstance().getBuilder();
+        builder.begin(renderType.mode(), renderType.format());
         PoseStack poseStack = "identity".equals(YUV_IMMEDIATE_POSE) ? new PoseStack() : event.getPoseStack();
         PoseStack.Pose pose = poseStack.last();
         emitQuad(builder, pose, quad.p0x(), quad.p0y(), quad.p0z(), quad.p1x(), quad.p1y(), quad.p1z(),
@@ -983,7 +993,8 @@ public final class VideoBillboardPreview extends VideoBillboardSessionSupport {
         emitQuad(builder, pose, quad.p0x(), quad.p0y(), quad.p0z(), quad.p1x(), quad.p1y(), quad.p1z(),
                 quad.p2x(), quad.p2y(), quad.p2z(), quad.p3x(), quad.p3y(), quad.p3z(), true, 1.0F,
                 projector.getProjectionBrightness());
-        MeshData mesh = builder.build();
+        // 1.20.1：build() -> endOrDiscardIfEmpty()（空缓冲返回 null 并丢弃）。
+        BufferBuilder.RenderedBuffer mesh = builder.endOrDiscardIfEmpty();
         if (mesh == null) {
             return false;
         }

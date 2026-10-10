@@ -1,8 +1,7 @@
 package com.zhongbai233.net_music_can_play_bili.client.renderer.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexSorting;
@@ -373,25 +372,21 @@ final class TerrainPreviewGpuCache implements AutoCloseable {
         }
     }
 
+    /**
+     * 1.21 会在相机移动时<b>只重排半透明层的索引缓冲</b>（
+     * {@code MeshData.SortState#buildSortedIndexBuffer} + {@code VertexBuffer#uploadIndexBuffer}）。
+     *
+     * <p><b>1.20.1 降级</b>：这两组 API 在 1.20.1 都不存在
+     * （{@code BufferBuilder.SortState} 没有任何公开方法，{@code VertexBuffer} 也没有
+     * {@code uploadIndexBuffer}）。因此本版本<b>不做相机相关的半透明重排</b>：
+     * 顶点顺序固定为编译时的写入顺序。相机移动时可能出现半透明面片的排序瑕疵，
+     * 这是已知的、有意的降级；如需恢复，需要改成"相机移动阈值触发整段重建"。</p>
+     *
+     * <p>恒返回 false，表示"没有任何层被改变"，调用方据此不做额外工作。</p>
+     */
     private boolean resortTranslucentQuads(TerrainPreviewFrame frame, Matrix4fc modelView,
             Matrix4fc viewProjection) {
-        boolean changed = false;
-        for (GpuSection section : sections.values()) {
-            GpuLayer layer = section.layers.get(RenderType.translucent());
-            if (layer == null || layer.sortState == null || layer.sortedFor(modelView)
-                    || !intersectsFrustum(frame, viewProjection, section.key)) {
-                continue;
-            }
-            float sectionX = section.key.minBlockX() - frame.originX();
-            float sectionY = section.key.minBlockY() - frame.originY();
-            float sectionZ = section.key.minBlockZ() - frame.originZ();
-            VertexSorting sorting = VertexSorting.byDistance(point ->
-                    TerrainTranslucentSortPolicy.viewDistanceSquared(modelView,
-                            sectionX, sectionY, sectionZ, point.x(), point.y(), point.z()));
-            layer.resort(sorting, modelView);
-            changed = true;
-        }
-        return changed;
+        return false;
     }
 
     private void disableForSession(String message, Throwable failure) {
@@ -614,9 +609,8 @@ final class TerrainPreviewGpuCache implements AutoCloseable {
         private static GpuSection upload(TerrainPreviewSectionCompiler.CompiledCpuSection compiled) {
             Map<RenderType, GpuLayer> layers = new HashMap<>();
             try {
-                for (Map.Entry<RenderType, MeshData> entry : compiled.layers().entrySet()) {
-                    GpuLayer layer = GpuLayer.create(entry.getValue(),
-                            compiled.sortStates().get(entry.getKey()));
+                for (Map.Entry<RenderType, BufferBuilder.RenderedBuffer> entry : compiled.layers().entrySet()) {
+                    GpuLayer layer = GpuLayer.create(entry.getValue());
                     layers.put(entry.getKey(), layer);
                 }
                 return new GpuSection(compiled.source().section(), compiled.source(), layers);
@@ -638,47 +632,25 @@ final class TerrainPreviewGpuCache implements AutoCloseable {
         private final int indexCount;
         private final VertexFormat.IndexType indexType;
         private final boolean customIndices;
-        @Nullable
-        private final MeshData.SortState sortState;
-        private Matrix4f lastSortModelView;
 
         private GpuLayer(VertexBuffer vertexBuffer, int indexCount, VertexFormat.IndexType indexType,
-                boolean customIndices, @Nullable MeshData.SortState sortState) {
+                boolean customIndices) {
             this.vertexBuffer = vertexBuffer;
             this.indexCount = indexCount;
             this.indexType = indexType;
             this.customIndices = customIndices;
-            this.sortState = sortState;
         }
 
-        private static GpuLayer create(MeshData mesh, @Nullable MeshData.SortState sortState) {
+        private static GpuLayer create(BufferBuilder.RenderedBuffer mesh) {
             int indexCount = mesh.drawState().indexCount();
             VertexFormat.IndexType indexType = mesh.drawState().indexType();
             boolean customIndices = mesh.indexBuffer() != null;
             VertexBuffer vertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
-            // upload 会接管并在成功/失败时关闭该 mesh；CompiledCpuSection.close 的二次 close 幂等。
+            // 1.20.1 的 upload 会在内部 release 该 RenderedBuffer（反汇编确证：正常/异常路径
+            // 各有一处 invokevirtual release），之后 CompiledCpuSection.close 的二次 release
+            // 会抛 IllegalStateException，那边已显式容忍。
             vertexBuffer.upload(mesh);
-            return new GpuLayer(vertexBuffer, indexCount, indexType, customIndices, sortState);
-        }
-
-        private boolean sortedFor(Matrix4fc modelView) {
-            return !TerrainTranslucentSortPolicy.needsResort(lastSortModelView, modelView);
-        }
-
-        private void resort(VertexSorting sorting, Matrix4fc modelView) {
-            if (sortState == null) {
-                return;
-            }
-            int bytes = Math.max(256, indexCount * indexType.bytes);
-            try (ByteBufferBuilder storage = new ByteBufferBuilder(bytes)) {
-                ByteBufferBuilder.Result result = sortState.buildSortedIndexBuffer(storage, sorting);
-                if (result == null) {
-                    return;
-                }
-                vertexBuffer.uploadIndexBuffer(result);
-            }
-            lastSortModelView = new Matrix4f(modelView);
-            TerrainPreviewRenderDiagnostics.recordTranslucentResort();
+            return new GpuLayer(vertexBuffer, indexCount, indexType, customIndices);
         }
 
         @Override
