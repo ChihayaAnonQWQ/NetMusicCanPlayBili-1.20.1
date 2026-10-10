@@ -150,7 +150,15 @@ final class MP4RgbaVideoLayer implements AutoCloseable {
                     b = data[i + 2] & 0xFF;
                     a = data[i + 3] & 0xFF;
                 }
-                image.setPixelRGBA(x, y, FastColor.ABGR32.color(a, r, g, b));
+                // ★ 参数顺序必须是 (alpha, blue, green, red)，不是 (a, r, g, b)！★
+                // 原因（1.20.1 jar 反汇编实证）：FastColor.ABGR32 的类名就是**位布局** A-B-G-R：
+                //   alpha = 位24-31、blue = 位16-23、green = 位8-15、red = 位0-7，
+                //   而 color(p0,p1,p2,p3) = p0<<24 | p1<<16 | p2<<8 | p3。
+                // NativeImage 的内存布局是 [R,G,B,A]，setPixelRGBA 直接 memPutInt（小端），
+                // 所以 red 必须落在**最低 8 位** —— 写成 color(a, r, g, b) 会把 r 塞进 blue 位、b 塞进 red 位，
+                // 画面变成**红蓝互换**（实测症状：蓝的地方发红、红的地方发蓝）。
+                // 与本工程 VideoFrameUploader.packPixel 的手工打包 (a<<24)|(b<<16)|(g<<8)|r 保持一致。
+                image.setPixelRGBA(x, y, FastColor.ABGR32.color(a, b, g, r));
                 i += 4;
             }
         }
